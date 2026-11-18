@@ -174,10 +174,13 @@
     catalogue.sort((a,b)=>stamp(b.date)-stamp(a.date));
     for(const p of programs.values()){
       p.episodes.sort((a,b)=>stamp(b.date)-stamp(a.date));
-      p.art=(p.series&&recordArt(p.series))||p.rows.map(r=>r.show_artwork).find(u=>validImage(u)&&imageOwners.get(u)===p.name)||p.rows.map(recordArt).find(Boolean);
+      p.art=(p.series&&recordArt(p.series))||p.rows.map(r=>r.show_artwork).find(u=>validImage(u)&&imageOwners.get(u)===p.name)||p.rows.map(recordArt).find(Boolean)||station.featuredCovers[p.name];
     }
     const rank=p=>p.series?0:p.art&&p.episodes.length>1?1:p.art?2:3;
-    orderedPrograms=[...programs.values()].sort((a,b)=>rank(a)-rank(b)||b.episodes.length-a.episodes.length||a.name.localeCompare(b.name,'he'));
+    // Respect the station's own featured-cover selections; all other shows remain searchable.
+    const highlights=Object.keys(station.featuredCovers);
+    const highlightRank=p=>{const i=highlights.indexOf(p.name);return i<0?100:i};
+    orderedPrograms=[...programs.values()].sort((a,b)=>highlightRank(a)-highlightRank(b)||rank(a)-rank(b)||b.episodes.length-a.episodes.length||a.name.localeCompare(b.name,'he'));
     const sources=[...new Set(catalogue.map(r=>r.platform).filter(Boolean))].sort();
     for(const name of sources) source.add(new Option(name,name));
     // Show the newest recording from each collection on the discovery shelves.
@@ -404,11 +407,15 @@
   byId('prev').onclick=()=>changePhoto(-1);byId('next').onclick=()=>changePhoto(1);
   for(const [name] of station.supporters)byId('credits').append(create('span','',name));
 
+  // Keep real programs directly after archive search; the recent list follows them.
+  byId('fresh').before(byId('archive').querySelector('.index-section'));
+
   const siteTitle=document.title, positions=new Map();
-  let rendered='', transition=null;
+  let rendered='', activeNavigation=null;
   if('scrollRestoration' in history) history.scrollRestoration='manual';
   const currentHash=()=>location.hash||'#home';
   const isDetail=h=>h.startsWith('#program/')||h.startsWith('#episode/');
+  const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
   function destination(hash){
     if(isDetail(hash))return 'detail';
     return Object.hasOwn(names,hash.slice(1))?hash.slice(1):'home';
@@ -438,56 +445,103 @@
       if(previous){const node=focus||visible.querySelector('h1')||visible;if(!focus)node.setAttribute('tabindex','-1');node.focus({preventScroll:true})}
     }
   }
+
+  // All page transitions leave the receiver mounted. A shared cover is
+  // extracted from the page snapshot only when both endpoints are on-screen.
+  function matchingCover(origin,from) {
+    const source=origin?.querySelector('[data-art]') ||
+      (isDetail(from)?detail.querySelector('.detail-hero>.cover'):null);
+    return visibleCover(source)?source:null;
+  }
+  function destinationCover(to,from) {
+    if(isDetail(to))return detail.querySelector('.detail-hero>.cover');
+    const screen=byId(destination(to));
+    return [...screen.querySelectorAll('a[href]')]
+      .find(a=>a.getAttribute('href')===from)?.querySelector('[data-art]') || null;
+  }
+  function visibleCover(node) {
+    if(!node)return false;
+    const r=node.getBoundingClientRect();
+    return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight;
+  }
+  function interruptNavigation() {
+    const nav=activeNavigation;
+    activeNavigation=null;
+    nav?.cancel();
+  }
   function move(hash,origin,push=true) {
     if(hash===rendered)return;
+    interruptNavigation();
     const from=rendered;
-    const outgoing=origin?.querySelector('[data-art]')||(isDetail(from)?detail.querySelector('.detail-hero>[data-art]'):null);
-    const motionAllowed=!matchMedia('(prefers-reduced-motion: reduce)').matches && typeof document.body.animate==='function';
-    let start=outgoing?.getBoundingClientRect();
-    if(transition){
-      if(transition.target===outgoing) start=transition.clone.getBoundingClientRect();
-      transition.cancel();
-    }
-    const copy=outgoing?.cloneNode(true);
-    const initialRadius=outgoing?getComputedStyle(outgoing).borderRadius:'0px';
-    positions.set(from,{y:window.scrollY,href:origin?.getAttribute('href')});
-    if(push)history.pushState(null,'',hash);
-    route(hash,!push);
-    if(!motionAllowed)return;
+    if(from)positions.set(from,{y:window.scrollY,href:origin?.getAttribute('href')});
+    const apply=()=>{
+      if(push)history.pushState(null,'',hash);
+      route(hash,!push);
+    };
+    if(reduceMotion() || !from){apply();return}
 
-    if(magazine && isDetail(hash)){
-      detail.querySelector('.detail-main')?.animate(
-        [{opacity:.45,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],
-        {duration:240,easing:'cubic-bezier(.2,.7,.25,1)'});
+    // View Transitions take coherent before/after snapshots. The page
+    // crossfades while the player outside the named snapshot remains live.
+    if(typeof document.startViewTransition==='function'){
+      const oldCover=matchingCover(origin,from);
+      if(oldCover)oldCover.style.viewTransitionName='soft-cover';
+      let nextCover=null;
+      const clean=()=>{
+        if(oldCover)oldCover.style.viewTransitionName='';
+        if(nextCover)nextCover.style.viewTransitionName='';
+      };
+      try{
+        const transition=document.startViewTransition(()=>{
+          apply();
+          const candidate=destinationCover(hash,from);
+          if(oldCover&&visibleCover(candidate)){
+            nextCover=candidate;
+            nextCover.style.viewTransitionName='soft-cover';
+          }else if(oldCover){oldCover.style.viewTransitionName=''}
+        });
+        const nav={cancel(){transition.skipTransition();clean()}};
+        activeNavigation=nav;
+        transition.finished.catch(()=>{}).finally(()=>{
+          clean();
+          if(activeNavigation===nav)activeNavigation=null;
+        });
+        return;
+      }catch(error){
+        clean();
+        if(hash!==rendered)apply();
+        return;
+      }
     }
-    if(!copy || !start?.width || start.bottom<0 || start.top>innerHeight)return;
-    const target=isDetail(hash)?detail.querySelector('.detail-hero>[data-art]'):
-      [...byId(destination(hash)).querySelectorAll('a[href]')].find(a=>a.getAttribute('href')===from)?.querySelector('[data-art]');
-    if(!target)return;
-    const finish=target.getBoundingClientRect();
-    if(!finish.width||finish.bottom<0||finish.top>innerHeight)return;
-    // Paint one cover between the two measured slots. Routing and transport stay interactive.
-    const finalRadius=getComputedStyle(target).borderRadius;
-    copy.classList.add('cover-flight');
-    copy.setAttribute('aria-hidden','true');
-    Object.assign(copy.style,{top:finish.top+'px',left:finish.left+'px',width:finish.width+'px',height:finish.height+'px',borderRadius:finalRadius});
-    document.body.append(copy);
-    target.style.visibility='hidden';
-    const dx=start.left-finish.left, dy=start.top-finish.top;
-    const animation=copy.animate([
-      {transform:'translate('+dx+'px,'+dy+'px) scale('+start.width/finish.width+','+start.height/finish.height+')',borderRadius:initialRadius},
-      {transform:'none',borderRadius:finalRadius}
-    ],{duration:pixel?180:magazine?225:340,easing:pixel?'steps(6,end)':'cubic-bezier(.2,.76,.19,1)'});
-    function clean(){
-      target.style.visibility='';copy.remove();
-      if(transition?.clone===copy)transition=null;
-    }
-    transition={target,clone:copy,cancel(){animation.cancel();clean()}};
-    animation.onfinish=clean;
-    animation.oncancel=()=>{if(copy.isConnected)clean()};
+
+    // Web Animations fallback: never hide the old screen before the new
+    // screen is ready. Cancelling a rapid navigation clears both animations.
+    const oldScreen=byId(destination(from));
+    if(!oldScreen?.animate){apply();return}
+    const exiting=oldScreen.animate([
+      {opacity:1,transform:'translateY(0)'},
+      {opacity:.76,transform:'translateY(-7px)'}
+    ],{duration:110,fill:'forwards',easing:'cubic-bezier(.3,0,.65,1)'});
+    let entering=null,cancelled=false;
+    const nav={cancel(){
+      cancelled=true;exiting.cancel();entering?.cancel();
+    }};
+    activeNavigation=nav;
+    exiting.finished.then(()=>{
+      if(cancelled)return;
+      exiting.cancel();
+      apply();
+      const incoming=byId(destination(hash));
+      entering=incoming.animate([
+        {opacity:.76,transform:'translateY(9px)'},
+        {opacity:1,transform:'translateY(0)'}
+      ],{duration:250,fill:'both',easing:'cubic-bezier(.16,1,.3,1)'});
+      entering.finished.catch(()=>{}).finally(()=>{
+        entering.cancel();
+        if(activeNavigation===nav)activeNavigation=null;
+      });
+    }).catch(()=>{});
   }
-  window.addEventListener('resize',()=>transition?.cancel());
-  window.addEventListener('scroll',()=>{if(transition && Math.abs(transition.target.getBoundingClientRect().top-parseFloat(transition.clone.style.top))>2)transition.cancel()},{passive:true});
+  window.addEventListener('resize',interruptNavigation);
   document.addEventListener('click',event=>{
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
     const a=event.target.closest('a[href^="#"]');
@@ -498,6 +552,7 @@
     event.preventDefault();move(hash,a);
   });
   window.addEventListener('hashchange',()=>move(currentHash(),null,false));
+  window.addEventListener('popstate',()=>move(currentHash(),null,false));
   for(const control of all('[data-shuffle]')){
     control.disabled=true;
     control.onclick=()=>{
