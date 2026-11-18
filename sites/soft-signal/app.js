@@ -197,6 +197,9 @@
   query.oninput=()=>{pageSize=32;filterArchive()};
   source.onchange=()=>{pageSize=32;filterArchive()};
   byId('more').onclick=()=>{pageSize+=32;filterArchive()};
+  byId('scroll-library').addEventListener('click',()=>{
+    byId('library-index').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+  });
 
   let selected=null, mode='idle', state='idle', now='רדיו בן־גוריון · באר שבע', playRequest=0;
   const stateText={idle:'',loading:'מתחבר לשמע…',playing:'בהשמעה',paused:'מושהה',error:'טעינת השמע נכשלה',provider:'האזנה בנגן המקור',ended:'ההקלטה הסתיימה'};
