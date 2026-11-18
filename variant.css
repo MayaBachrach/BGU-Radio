@@ -1,6 +1,11 @@
-/* Base design sketch: editorial campus radio */
-.hero{position:relative}
-.listen-card{border:1px solid #171914}
-.photo{border:1px solid #171914}
-.supporters{background:var(--paper)}
-::selection{background:var(--lime);color:var(--ink)}
+/* Direction 2 — late-night studio: dark, electric, live */
+:root{--paper:#111316;--ink:#f4f0e7;--blue:#f25b35;--orange:#d8ff52;--lime:#88f7e0;--line:#3b3d40}
+.topline{background:var(--lime);color:#111316}.topline b{color:var(--blue)}
+.brand i{background:var(--lime)}.hero{min-height:660px}.hero h1 span{color:var(--lime)}
+.eyebrow{color:var(--lime)}.stamp{background:var(--orange);color:#111316;border:0}
+.listen-card{background:#202226;border:1px solid #555;box-shadow:12px 12px 0 var(--blue)}
+.play{background:var(--orange);color:#111316}.wave i{background:var(--lime)}
+.section{border-color:var(--line)}.photo{border-color:#444}.photo figcaption{background:var(--orange)}
+.contact{background:var(--blue);color:#111316}.contact .eyebrow{color:#111316!important}.contact p{color:#222}
+.contact a.mail{background:var(--lime)}.supporters{background:#191b1e;border-color:var(--line)}
+footer{color:#a9aaa5}
