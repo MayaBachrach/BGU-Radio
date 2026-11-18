@@ -379,21 +379,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 }
 
 
-/* SOFT SIGNAL — coordinated navigation and artwork-first discovery. */
-@supports (view-transition-name:soft-page) {
-  #main-content {view-transition-name:soft-page}
-  /* The root holds navigation and the persistent player: no double exposure. */
-  ::view-transition-old(root) {animation:none!important;opacity:0!important}
-  ::view-transition-new(root) {animation:none!important}
-  /* Prevent scaling the entire page when incoming/outgoing heights differ. */
-  ::view-transition-group(soft-page) {animation:none!important}
-  ::view-transition-old(soft-page) {animation:soft-page-out 120ms ease-in both}
-  ::view-transition-new(soft-page) {animation:soft-page-in 260ms cubic-bezier(.18,.7,.2,1) both}
-  ::view-transition-old(soft-cover),::view-transition-new(soft-cover) {animation-duration:300ms;animation-timing-function:cubic-bezier(.18,.78,.2,1)}
-  ::view-transition-group(soft-cover) {animation-duration:300ms}
-}
-@keyframes soft-page-out {to {opacity:0;transform:translateY(-8px) scale(.997)}}
-@keyframes soft-page-in {from {opacity:.97;transform:translateY(11px) scale(.997)}to {opacity:1;transform:none}}
+/* SOFT SIGNAL — discovery-first layout; site-owned motion is in app.js. */
 .home-intro {padding-block:20px 18px}
 .intro-heading {margin-top:9px}
 .intro-heading h1 {font-size:clamp(2.5rem,4.2vw,4.45rem)}
@@ -477,9 +463,4 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   #groups .sleeve:first-child .cover {width:43%}
   #groups .sleeve:first-child strong {font-size:1.35rem}
   #archive .archive-fresh {margin-top:50px}
-}
-@media (prefers-reduced-motion:reduce){
-  ::view-transition-old(root),::view-transition-new(root),
-  ::view-transition-old(soft-page),::view-transition-new(soft-page),
-  ::view-transition-old(soft-cover),::view-transition-new(soft-cover) {animation:none!important}
 }

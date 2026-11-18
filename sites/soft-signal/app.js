@@ -446,24 +446,7 @@
     }
   }
 
-  // All page transitions leave the receiver mounted. A shared cover is
-  // extracted from the page snapshot only when both endpoints are on-screen.
-  function matchingCover(origin,from) {
-    const source=origin?.querySelector('[data-art]') ||
-      (isDetail(from)?detail.querySelector('.detail-hero>.cover'):null);
-    return visibleCover(source)?source:null;
-  }
-  function destinationCover(to,from) {
-    if(isDetail(to))return detail.querySelector('.detail-hero>.cover');
-    const screen=byId(destination(to));
-    return [...screen.querySelectorAll('a[href]')]
-      .find(a=>a.getAttribute('href')===from)?.querySelector('[data-art]') || null;
-  }
-  function visibleCover(node) {
-    if(!node)return false;
-    const r=node.getBoundingClientRect();
-    return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight;
-  }
+  // Only the screen animates. Audio and player stay mounted and stable.
   function interruptNavigation() {
     const nav=activeNavigation;
     activeNavigation=null;
@@ -480,56 +463,18 @@
     };
     if(reduceMotion() || !from){apply();return}
 
-    // View Transitions take coherent before/after snapshots. The page
-    // crossfades while the player outside the named snapshot remains live.
-    if(typeof document.startViewTransition==='function'){
-      const oldCover=matchingCover(origin,from);
-      if(oldCover)oldCover.style.viewTransitionName='soft-cover';
-      let nextCover=null,cleaned=false;
-      const clean=()=>{
-        if(cleaned)return;
-        cleaned=true;
-        if(oldCover)oldCover.style.viewTransitionName='';
-        if(nextCover)nextCover.style.viewTransitionName='';
-      };
-      try{
-        const transition=document.startViewTransition(()=>{
-          apply();
-          const candidate=destinationCover(hash,from);
-          if(oldCover&&visibleCover(candidate)){
-            nextCover=candidate;
-            nextCover.style.viewTransitionName='soft-cover';
-          }else if(oldCover){oldCover.style.viewTransitionName=''}
-        });
-        const nav={cancel(){transition.skipTransition();clean()}};
-        activeNavigation=nav;
-        // skipTransition rejects .ready even when .finished resolves; consume it
-        // so rapid repeated navigation cannot produce unhandled page errors.
-        transition.ready.catch(()=>{});
-        transition.updateCallbackDone.catch(()=>{});
-        transition.finished.catch(()=>{}).finally(()=>{
-          clean();
-          if(activeNavigation===nav)activeNavigation=null;
-        });
-        return;
-      }catch(error){
-        clean();
-        if(hash!==rendered)apply();
-        return;
-      }
-    }
-
-    // Web Animations fallback: never hide the old screen before the new
-    // screen is ready. Cancelling a rapid navigation clears both animations.
-    const oldScreen=byId(destination(from));
-    if(!oldScreen?.animate){apply();return}
-    const exiting=oldScreen.animate([
-      {opacity:1,transform:'translateY(0)'},
-      {opacity:.76,transform:'translateY(-7px)'}
-    ],{duration:110,fill:'forwards',easing:'cubic-bezier(.3,0,.65,1)'});
+    // Cancellable, sequential page motion: no overlapping text snapshots.
+    const outgoing=byId(destination(from));
+    if(!outgoing?.animate){apply();return}
+    const exiting=outgoing.animate([
+      {opacity:1,transform:'translateY(0) scale(1)'},
+      {opacity:0,transform:'translateY(-9px) scale(.997)'}
+    ],{duration:135,fill:'forwards',easing:'cubic-bezier(.3,0,.72,1)'});
     let entering=null,cancelled=false;
     const nav={cancel(){
-      cancelled=true;exiting.cancel();entering?.cancel();
+      cancelled=true;
+      exiting.cancel();
+      entering?.cancel();
     }};
     activeNavigation=nav;
     exiting.finished.then(()=>{
@@ -538,9 +483,9 @@
       apply();
       const incoming=byId(destination(hash));
       entering=incoming.animate([
-        {opacity:.76,transform:'translateY(9px)'},
-        {opacity:1,transform:'translateY(0)'}
-      ],{duration:250,fill:'both',easing:'cubic-bezier(.16,1,.3,1)'});
+        {opacity:.96,transform:'translateY(9px) scale(.997)'},
+        {opacity:1,transform:'translateY(0) scale(1)'}
+      ],{duration:270,fill:'both',easing:'cubic-bezier(.18,.8,.24,1)'});
       entering.finished.catch(()=>{}).finally(()=>{
         entering.cancel();
         if(activeNavigation===nav)activeNavigation=null;
