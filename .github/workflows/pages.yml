@@ -57,7 +57,7 @@ jobs:
           from pathlib import Path
           station = json.loads(Path("data/station.json").read_text(encoding="utf-8"))
           Path("dist/main/station-info.js").write_text(
-              "window.BGU_CONTENT = " + json.dumps(station, ensure_ascii=False) + ";\\n",
+              "window.BGU_CONTENT = " + json.dumps(station, ensure_ascii=False) + ";\n",
               encoding="utf-8")
           PY
           (cd extension && zip -q ../dist/main/downloads/bgu-radio-player.zip *.json *.js *.html *.css)

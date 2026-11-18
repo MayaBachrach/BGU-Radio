@@ -35,7 +35,7 @@ for slug in site_ids:
 urls = set(station["featuredCovers"].values())
 urls.update(photo[1] for photo in station["gallery"])
 for html in docs.values():
-    urls.update(re.findall(r'<img\\b[^>]*\\bsrc="(https?://[^"]+)"', html))
+    urls.update(re.findall(r'<img\b[^>]*\bsrc="(https?://[^"]+)"', html))
 for record in catalogue[:28] + [r for r in catalogue if r.get("kind") == "series" or r.get("show_artwork")]:
     art = record.get("show_artwork") or record.get("artwork")
     if art and art.startswith(("https://", "http://")):
