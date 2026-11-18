@@ -1,6 +1,13 @@
-/* Base design sketch: editorial campus radio */
-.hero{position:relative}
-.listen-card{border:1px solid #171914}
-.photo{border:1px solid #171914}
-.supporters{background:var(--paper)}
-::selection{background:var(--lime);color:var(--ink)}
+/* Direction 3 — campus zine: bright poster colors and paper */
+:root{--paper:#fff1c7;--ink:#17255f;--blue:#2247d8;--orange:#ee4d32;--lime:#d7fa54;--line:#17255f}
+.topline{background:var(--orange);color:#fff}.topline b{color:var(--lime)}
+.brand i{background:var(--orange)}header{border-bottom:3px solid var(--ink)}
+.hero{min-height:690px}.hero h1{font-weight:700;text-transform:uppercase}.hero h1 span{color:var(--orange)}
+.stamp{background:var(--blue);color:white;border:3px solid var(--ink);font-weight:500}
+.listen-card{background:#fff;border:3px solid var(--ink);color:var(--ink);box-shadow:11px 11px 0 var(--blue);transform:rotate(-1deg)}
+.card-top{border-color:#d0c9ad}.live-dot{color:#237c4c}.live-dot:before{background:#42c877;box-shadow:none}
+.track-artist{color:#5f6480}.play{background:var(--orange);color:#fff}.wave i{background:var(--blue)}
+.photo{border:2px solid var(--ink)}.photo figcaption{background:var(--blue);color:#fff}
+.section{border-top:3px solid var(--ink)}.contact{background:var(--orange);color:#fff;border:3px solid var(--ink);box-shadow:10px 10px 0 var(--ink)}
+.contact p{color:#fff}.contact a.mail{background:var(--lime);color:var(--ink)}
+.supporters{border-bottom:3px solid var(--ink)}footer{color:#555d7c}
