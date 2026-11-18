@@ -8,8 +8,8 @@ output.mkdir(exist_ok=True)
 results = []
 with sync_playwright() as studio:
     browser = studio.chromium.launch()
-    for branch in ["main","design-campus","design-studio","design-poolsuite","design-shuffle"]:
-        page = browser.new_page(reduced_motion="reduce")
+    for branch in ["soft-signal","after-hours","pixel-frequency"]:
+        page = browser.new_page(reduced_motion="no-preference")
         for width, height in [(320,640),(375,812),(390,844),(430,932),(600,860),(768,1024),(844,390),(1024,768),(1440,900)]:
             print(branch, width, flush=True)
             page.set_viewport_size({"width":width,"height":height})
@@ -19,8 +19,19 @@ with sync_playwright() as studio:
                 page.locator('header nav a[href="#home"]').click()
             page.locator("#onair").wait_for()
             if width in [390,1440]:
-                page.screenshot(animations="disabled",path=str(output/f"{branch}-{width}.png"),timeout=45000)
+                page.screenshot(path=str(output/f"{branch}-{width}.png"),timeout=45000)
+            if width in [390,1440]:
+                tile=page.locator("[data-page=home] .tile").last
+                tile.hover()
+                tile.click()
+                page.locator("details[open] .episode-line").first.wait_for()
+                page.locator('header nav a[href="#home"]').click()
+                if branch=="pixel-frequency":
+                    page.locator(".shelves").click()
+                    page.locator("#query").wait_for()
+                    page.locator('header nav a[href="#home"]').click()
             overflow = page.evaluate("document.documentElement.scrollWidth > innerWidth")
+            assert not overflow, (branch,width)
             page.locator('header nav a[href="#archive"]').click()
             page.locator("#groups details summary").first.wait_for()
             if width in [390, 1440]:
@@ -30,7 +41,7 @@ with sync_playwright() as studio:
                 cover.scroll_into_view_if_needed()
                 cover.evaluate("(img) => img.decode()", timeout=20000)
                 assert cover.evaluate("img => img.naturalWidth > 0")
-                page.screenshot(path=str(output/f"archive-{branch}-{width}.png"), animations="disabled")
+                page.screenshot(path=str(output/f"archive-{branch}-{width}.png"))
                 archive.locator("summary").first.click()
                 archive.locator("details[open] .episode-line").first.wait_for()
                 archive.locator("summary").first.click()
