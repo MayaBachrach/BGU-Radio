@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "BGU Radio Live",
+  "version": "0.1.0",
+  "description": "Listen to BGU Radio live from your Chrome toolbar.",
+  "permissions": ["offscreen"],
+  "host_permissions": ["https://bguradio.co/*"],
+  "action": {
+    "default_title": "BGU Radio Live",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
