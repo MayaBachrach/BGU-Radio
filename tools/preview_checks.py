@@ -1,4 +1,5 @@
 """Capture the comparison images and exercise the assembled Pages site."""
+import base64
 import json
 import hashlib
 import io
@@ -86,3 +87,16 @@ with sync_playwright() as studio:
         page.close()
     browser.close()
 (output/"checks.json").write_text(json.dumps(results,indent=2))
+
+# Inline lightweight comparison artwork so all six previews arrive with the page.
+def preview_source(match):
+    filename = match.group(1)
+    with Image.open(output / filename) as shot:
+        shot.thumbnail((720, 560))
+        buffer = io.BytesIO()
+        shot.convert("RGB").save(buffer, format="WEBP", quality=78)
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f'src="data:image/webp;base64,{encoded}"'
+
+template = Path("compare.html")
+template.write_text(re.sub(r'src="\.\./shots/([^"]+)"', preview_source, template.read_text()))
