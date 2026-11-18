@@ -501,6 +501,10 @@
         });
         const nav={cancel(){transition.skipTransition();clean()}};
         activeNavigation=nav;
+        // skipTransition rejects .ready even when .finished resolves; consume it
+        // so rapid repeated navigation cannot produce unhandled page errors.
+        transition.ready.catch(()=>{});
+        transition.updateCallbackDone.catch(()=>{});
         transition.finished.catch(()=>{}).finally(()=>{
           clean();
           if(activeNavigation===nav)activeNavigation=null;
