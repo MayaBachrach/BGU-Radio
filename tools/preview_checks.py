@@ -69,9 +69,11 @@ with sync_playwright() as studio:
                 cover.evaluate("(img) => img.decode()", timeout=20000)
                 assert cover.evaluate("img => img.naturalWidth > 0")
                 page.screenshot(path=str(output/f"archive-{branch}-{width}.png"))
-                archive.locator("summary").first.click()
-                archive.locator("details[open] .episode-line").first.wait_for()
-                archive.locator("summary").first.click()
+                program = archive.locator("#groups details").first
+                if program.get_attribute("open") is None:
+                    program.locator("summary").click()
+                program.locator(".episode-line").first.wait_for()
+                program.locator("summary").click()
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
             page.locator("#query").fill("רדיו")
             page.locator("#query").fill("")
