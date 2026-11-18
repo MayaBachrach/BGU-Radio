@@ -42,18 +42,51 @@ function picture(step){const pics=BGU_CONTENT.gallery;photo=(photo+step+pics.len
 picture(0);$('prev').onclick=()=>picture(-1);$('next').onclick=()=>picture(1);
 for(const [name] of BGU_CONTENT.supporters){$('credits').append(el('span',name))}
 let rows=[];
-function listen(item){history.replaceState(null,'','#episode/'+encodeURIComponent(item.source)); revealArchive();live.pause();deck.replaceChildren(el('h3',item.title));if(item.description)deck.append(el('p',item.description));if(timestamp(item.date))deck.append(el('small',new Date(timestamp(item.date)).toLocaleDateString('he-IL')));const fields=[['הגשה',item.host],['הפקה',item.production],['עריכה',item.editor]].filter(p=>p[1]);if(fields.length)deck.append(el('p',fields.map(p=>p.join(' · ')).join('  /  ')));
+function listen(item){history.replaceState(null,'','#episode/'+encodeURIComponent(item.source)); revealArchive();live.pause();deck.replaceChildren(cover(group(item),artFor(item)),el('h3',item.title));if(item.description)deck.append(el('p',item.description));if(timestamp(item.date))deck.append(el('small',new Date(timestamp(item.date)).toLocaleDateString('he-IL')));const fields=[['הגשה',item.host],['הפקה',item.production],['עריכה',item.editor]].filter(p=>p[1]);if(fields.length)deck.append(el('p',fields.map(p=>p.join(' · ')).join('  /  ')));
 if(item.audio||item.embed){const player=el(item.audio?'audio':'iframe');player.src=item.audio||item.embed;player.title=item.title;player.controls=true;player.allow='autoplay; encrypted-media';deck.append(player);if(item.audio){const status=el('small');status.setAttribute('role','status');deck.append(status);for(const [event,label] of Object.entries({waiting:'טוען שמע…',playing:'בהשמעה',pause:'מושהה',error:'הטעינה נכשלה. אפשר להאזין דרך הקישור למקור.'}))player.addEventListener(event,()=>status.textContent=label);player.play().catch(()=>status.textContent='לחצו להפעלה בנגן')}}
 const a=el('a','האזנה במקור ↗');a.href=item.source;deck.append(a);deck.scrollIntoView({block:'center'})}
 function timestamp(v){if(!v)return 0;if(/^\d+$/.test(v))return Number(v)*(String(v).length<=10?1000:1);return Date.parse(v)||0}
 function group(r){if(r.series)return r.series;const cleaned=r.title.replace(/^\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*/,'').replace(/\s*[-|–]?\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*$/,'').replace(/\s+[-–]?\s*(?:בהגשת|hosted by)\s+.+$/i,'').replace(/^['"״]+|['"״]+$/g,'').trim();return cleaned.split(/\s+[|·–—]\s+|\s+[-–]\s+פרק|\s+פרק\s+\d/i)[0].trim()||r.title}
+const archiveSkin={'main':'broadcast','design-campus':'cinema','design-studio':'machine','design-poolsuite':'desktop','design-shuffle':'index'};
+$('archive').dataset.skin=archiveSkin[location.pathname.split('/').filter(Boolean).pop()]||'broadcast';
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='../main/archive.css';document.head.append(sheet);
+const owners=new Map();
+function indexArt(data){
+ for(const r of data){for(const url of [r.artwork,r.show_artwork].filter(Boolean)){const name=group(r);owners.set(url,owners.has(url)&&owners.get(url)!==name?null:name)}}
+}
+function artFor(row){return [row.artwork,row.show_artwork].find(url=>url&&owners.get(url)===group(row)&&/^https?:/.test(url)&&!/(default.art|default_avatar|placeholder)/i.test(url))}
+function cover(title,url){
+ const wrap=el('figure');wrap.className='sleeve-art';wrap.setAttribute('aria-hidden','true');
+ const palette=[['#ec763d','#302119'],['#254849','#efedc7'],['#dccdb1','#372641'],['#e9b9ba','#501633'],['#b0cce0','#192d48']];
+ const hash=Array.from(title).reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,0);
+ const [paper,ink]=palette[hash%palette.length];wrap.style.setProperty('--paper',paper);wrap.style.setProperty('--type',ink);
+ const type=el('div');type.className='letterpress';type.append(el('small','BGU / RADIO'),el('strong',title),el('small','עטיפת ארכיון'));wrap.append(type);
+ if(url){const img=el('img');img.alt='';img.loading='lazy';img.decoding='async';img.onerror=()=>img.remove();img.src=url.replace(/^http:/,'https:');wrap.append(img)}return wrap
+}
+function dateLabel(row){const value=timestamp(row.date);return value?new Date(value).toLocaleDateString('he-IL'):''}
+function programSleeve(title,items){
+ const details=el('details');details.dataset.program=title;const summary=el('summary');const name=el('strong',title);name.className='cover-name';
+ const series=items.find(i=>i.kind==='series'), episodes=items.filter(i=>i.kind!=='series');
+ const url=series&&artFor(series)||items.map(i=>i.show_artwork).find(u=>u&&owners.get(u)===title)||items.map(artFor).find(Boolean);
+ summary.append(cover(title,url),name,el('small',episodes.length===1?'הקלטה אחת':episodes.length?episodes.length+' הקלטות':'לפרקי הסדרה'));details.append(summary);
+ details.ontoggle=()=>{if(!details.open||details.children.length>1)return;
+ const link=el('a','קישור לתוכנית');link.href='#program/'+encodeURIComponent(title);details.append(link);
+ if(series?.description)details.append(el('p',series.description));const hosts=[...new Set(items.map(i=>i.host).filter(Boolean))];if(hosts.length)details.append(el('p','הגשה · '+hosts.join(', ')));
+ for(const row of items){const button=el('button');button.className='episode-line';const label=el('span',row.kind==='series'?'כל הפרקים ב־'+row.platform:row.title);label.append(el('small',[dateLabel(row),row.host].filter(Boolean).join(' · ')));button.append(cover(title,artFor(row)||url),label);button.onclick=()=>listen(row);details.append(button)}};
+ return details
+}
+function recentReleases(data){
+ const section=el('section');section.className='recent';section.append(el('h3','הקלטות אחרונות'));const strip=el('div');strip.className='recent-strip';
+ for(const row of data.filter(r=>r.kind!=='series'&&timestamp(r.date)).slice(0,10)){const button=el('button');button.append(cover(group(row),artFor(row)),el('span',row.title),el('small',dateLabel(row)));button.onclick=()=>listen(row);strip.append(button)}
+ section.append(strip);if(strip.childElementCount)$('groups').before(section)
+}
 let groupLimit=36;
 function render(){const q=$('query').value.trim().toLocaleLowerCase();const groups=new Map();
 for(const row of rows){if(sourceFilter.value&&row.platform!==sourceFilter.value)continue;if(![row.title,row.series,row.host,row.production,row.editor,row.publisher].join(' ').toLocaleLowerCase().includes(q))continue;const key=group(row);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row)}
 $('groups').replaceChildren();$('total').textContent=groups.size+' תוכניות ואוספים';
-const ordered=[...groups].sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0],'he'));for(const [title,items] of ordered.slice(0,groupLimit)){const details=el('details'),sum=el('summary',title);const episodes=items.filter(i=>i.kind!=='series');if(location.pathname.includes('/main/')&&items.some(r=>r.artwork)){const cover=el('img');cover.src=items.find(r=>r.artwork).artwork;cover.loading='lazy';cover.alt='';cover.onerror=()=>cover.remove();sum.prepend(cover)}sum.append(el('small',episodes.length?(episodes.length===1?'הקלטה אחת':episodes.length+' הקלטות'):'פרקי הסדרה ↗'));details.dataset.program=title;details.append(sum);details.ontoggle=()=>{if(!details.open||details.children.length>1)return;const link=el('a','קישור לתוכנית');link.href='#program/'+encodeURIComponent(title);details.append(link);for(const r of items){const b=el('button',(r.kind==='series'?'כל הפרקים ב־'+r.platform:'▷  '+r.title));b.onclick=()=>listen(r);details.append(b)}};$('groups').append(details)}if(groups.size>groupLimit){const more=el('button','תוכניות נוספות');more.onclick=()=>{groupLimit+=36;render()};$('groups').append(more)}}
+const ordered=[...groups].sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0],'he'));for(const [title,items] of ordered.slice(0,groupLimit)){$('groups').append(programSleeve(title,items))}if(groups.size>groupLimit){const more=el('button','תוכניות נוספות');more.onclick=()=>{groupLimit+=36;render()};$('groups').append(more)}}
 const sourceFilter=el('select');sourceFilter.setAttribute('aria-label','סינון לפי מקור');const allSources=el('option','כל המקורות');allSources.value='';sourceFilter.append(allSources);$('query').after(sourceFilter);sourceFilter.onchange=render;
-fetch('../library.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{for(const source of [...new Set(data.map(r=>r.platform).filter(Boolean))].sort())sourceFilter.append(el('option',source));rows=data.sort((a,b)=>timestamp(b.date)-timestamp(a.date));render();route()}).catch(()=>{$('total').textContent='טעינת הארכיון נכשלה';const a=el('a','פתיחת ארכיון התחנה');a.href='https://hearthis.at/bgu-radio/';$('groups').append(a)});
+fetch('../library.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{for(const source of [...new Set(data.map(r=>r.platform).filter(Boolean))].sort())sourceFilter.append(el('option',source));indexArt(data);rows=data.sort((a,b)=>timestamp(b.date)-timestamp(a.date));recentReleases(rows);render();route()}).catch(()=>{$('total').textContent='טעינת הארכיון נכשלה';const a=el('a','פתיחת ארכיון התחנה');a.href='https://hearthis.at/bgu-radio/';$('groups').append(a)});
 $('query').oninput=()=>{groupLimit=36;render()};
 if($('shuffle'))$('shuffle').onclick=()=>{const pool=rows.filter(r=>r.kind!=='series'&&(r.audio||r.embed));if(pool.length){location.hash='archive';route();listen(pool[Math.floor(Math.random()*pool.length)])}};
 function revealArchive(){for(const p of document.querySelectorAll('[data-page]'))p.hidden=p.dataset.page!=='archive'}
