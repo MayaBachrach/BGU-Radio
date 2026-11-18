@@ -40,7 +40,8 @@ jobs:
             git archive "$ref" | tar -x -C "dist/$slug"
             rm -rf "dist/$slug/.github"
             mkdir -p "dist/$slug/downloads"
-            (cd "dist/$slug" && zip -q -r downloads/bgu-radio-player.zip extension)
+            git show origin/main:content.js > "dist/$slug/content.js"
+            (cd "dist/$slug/extension" && zip -q ../downloads/bgu-radio-player.zip *.json *.js *.html *.css)
             rm -rf "dist/$slug/extension" "dist/$slug/README.md"
           done
           cat > dist/index.html <<'HTML'
