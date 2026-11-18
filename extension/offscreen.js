@@ -1,0 +1,2 @@
+const audio=document.getElementById("radio");
+chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{if(message.target!=="offscreen")return;if(message.action==="state"){sendResponse({playing:!audio.paused});return;}if(message.action==="toggle"){(async()=>{try{if(audio.paused)await audio.play();else audio.pause();sendResponse({playing:!audio.paused});}catch{sendResponse({playing:false,error:"The live stream could not start. Try again."});}})();return true;}});
