@@ -38,3 +38,14 @@ document.addEventListener("DOMContentLoaded", async () => {
  search.oninput=draw;draw();
  try{for(let page=1;;page++){const res=await fetch("https://api-v2.hearthis.at/bgu-radio/?type=tracks&count=50&page="+page);if(!res.ok)break;const items=await res.json();if(!Array.isArray(items)||!items.length)break;const before=tracks.size;for(const t of items){if(t.permalink_url)add(t.title,t.permalink_url.replace(/\/$/,"")+"/listen.mp3")}draw();if(items.length<50||tracks.size===before)break}}catch{}
 });
+
+const assetRoot="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/695cb8cdaf769d5c88acb1d9/";
+BGU_CONTENT.gallery.unshift(["אולפן הרדיו",assetRoot+"0b3d98af9_.jpg"]);
+BGU_CONTENT.gallery.push(["מאחורי הקלעים",assetRoot+"53ad99d5c_.jpg"],["מאחורי הקלעים",assetRoot+"4b5f8bab1_.jpg"]);
+BGU_CONTENT.supporters.splice(2,0,["David Breslauer",""]);
+document.addEventListener("DOMContentLoaded",()=>{
+const about=[...document.querySelectorAll("section")].find(s=>s.querySelector("h2")?.textContent==="על התחנה");
+if(about){about.replaceChildren();const h=document.createElement("h2");h.textContent="אודות BGU Radio";about.append(h,"ברוכים הבאים לתחנת הרדיו הרשמית של אוניברסיטת בן-גוריון בנגב! אנחנו קהילה תוססת של אקדמאים, יזמים ויוצרים שמביאים לכם את הטוב ביותר במוזיקה, תוכניות אירוח, העשרה ותרבות בקמפוס ובנגב. אנחנו חלק ממרכז יזמות 360 והתחנה שלנו היא אקדמיה למיומנויות שונות מעולמות היזמות, היצירה והניהול - והמקום הכי וואו לייצר בו תיק עבודות תוך כדי התואר. בזמן שאתם כאן - אנחנו כבר באוויר, לחצו כדי לשמוע (:")}
+const contact=document.querySelector("#contact");const link=contact?.querySelector('a[href*="base44"]');if(link){link.href="https://bgu-radio.base44.app/#:~:text="+encodeURIComponent("יש לכם רעיון לתכנית");link.textContent="לטופס יצירת הקשר של התחנה";const invite=document.createElement("p");invite.textContent="יש לכם רעיון לתכנית? יש לכם מה להגיד? סקרנים ורוצים להצטרף? האולפן שלנו פתוח, בואו לשדר איתנו!";link.parentElement.before(invite)}
+const license=contact?.querySelector('a[href*="acum.org"]');if(license){const e=document.createElement("a");e.href="https://eshkolot.co.il/";e.textContent="אשכולות";license.after(" ו",e)}
+});
