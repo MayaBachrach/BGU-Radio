@@ -237,11 +237,11 @@
       detailControl.lastElementChild.textContent=same&&active?(mode==='embed'?'סגירת נגן המקור':'השהיה'):detailControl.dataset.label;
       detailControl.setAttribute('aria-pressed',String(Boolean(same&&active)));
     }
-    receiver.hidden=mode==='idle' && !byId('home').hidden;
+    receiver.hidden=!selected;
     document.body.classList.toggle('has-receiver',!receiver.hidden);
-    const headline=selected?.title || (mode==='live'?now:'רדיו בן־גוריון');
+    const headline=selected?.title || '';
     byId('dock-title').textContent=headline;byId('panel-title').textContent=headline;
-    byId('dock-state').textContent=[mode==='live'||mode==='idle'?'שידור חי':selected?.platform,stateText[state]].filter(Boolean).join(' · ');
+    byId('dock-state').textContent=[selected?.platform,stateText[state]].filter(Boolean).join(' · ');
     setSymbol(byId('dock-play'),active?'pause':'play');
     byId('dock-play').setAttribute('aria-label',active?(mode==='embed'?'סגירת נגן המקור':'השהיה'):'הפעלה');
     byId('return-episode').hidden=!selected;
@@ -291,7 +291,7 @@
     }
   }
   for(const control of all('[data-live]')) control.addEventListener('click',liveToggle);
-  byId('dock-play').onclick=()=>selected?listen(selected):liveToggle();
+  byId('dock-play').onclick=()=>{if(selected)listen(selected)};
   byId('open-panel').onclick=()=>setPanel(byId('receiver-panel').hidden);
   byId('collapse').onclick=()=>{setPanel(false);byId('open-panel').focus()};
   for(const event of ['playing','pause','waiting','error','ended']){
@@ -414,7 +414,8 @@
   for(const [name] of station.supporters)byId('credits').append(create('span','',name));
 
   const siteTitle=document.title, positions=new Map();
-  let rendered='', transition=null;
+  let rendered='', navigation=null, reveals=[];
+  const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
   if('scrollRestoration' in history) history.scrollRestoration='manual';
   const currentHash=()=>location.hash||'#home';
   const isDetail=h=>h.startsWith('#program/')||h.startsWith('#episode/');
@@ -426,7 +427,6 @@
     const screen=destination(hash);
     const previous=rendered;
     rendered=hash;
-    for(const s of all('[data-screen]'))s.hidden=s.dataset.screen!==screen;
     const navPage=screen==='detail'?'archive':screen;
     for(const a of all('[data-nav]')){
       if(a.dataset.nav===navPage)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
@@ -437,6 +437,7 @@
       else renderProgram(programs.get(id.trim()));
     }
     if(screen==='gallery'&&!byId('photo').getAttribute('src'))changePhoto();
+    for(const panel of all('[data-screen]'))panel.hidden=panel.dataset.screen!==screen;
     document.title=screen==='home'?siteTitle:((screen==='detail'?detail.querySelector('h1')?.textContent:names[screen])||'רדיו בן־גוריון')+' · '+siteTitle;
     syncTransport();
     if(previous!==hash){
@@ -447,56 +448,52 @@
       if(previous){const node=focus||visible.querySelector('h1')||visible;if(!focus)node.setAttribute('tabindex','-1');node.focus({preventScroll:true})}
     }
   }
-  function move(hash,origin,push=true) {
-    if(hash===rendered)return;
-    const from=rendered;
-    const outgoing=origin?.querySelector('[data-art]')||(isDetail(from)?detail.querySelector('.detail-hero>[data-art]'):null);
-    const motionAllowed=!matchMedia('(prefers-reduced-motion: reduce)').matches && typeof document.body.animate==='function';
-    let start=outgoing?.getBoundingClientRect();
-    if(transition){
-      if(transition.target===outgoing) start=transition.clone.getBoundingClientRect();
-      transition.cancel();
-    }
-    const copy=outgoing?.cloneNode(true);
-    const initialRadius=outgoing?getComputedStyle(outgoing).borderRadius:'0px';
-    positions.set(from,{y:window.scrollY,href:origin?.getAttribute('href')});
-    if(push)history.pushState(null,'',hash);
-    route(hash,!push);
-    if(!motionAllowed)return;
-
-    if(magazine && isDetail(hash)){
-      detail.querySelector('.detail-main')?.animate(
-        [{opacity:.45,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],
-        {duration:240,easing:'cubic-bezier(.2,.7,.25,1)'});
-    }
-    if(!copy || !start?.width || start.bottom<0 || start.top>innerHeight)return;
-    const target=isDetail(hash)?detail.querySelector('.detail-hero>[data-art]'):
-      [...byId(destination(hash)).querySelectorAll('a[href]')].find(a=>a.getAttribute('href')===from)?.querySelector('[data-art]');
-    if(!target)return;
-    const finish=target.getBoundingClientRect();
-    if(!finish.width||finish.bottom<0||finish.top>innerHeight)return;
-    // Paint one cover between the two measured slots. Routing and transport stay interactive.
-    const finalRadius=getComputedStyle(target).borderRadius;
-    copy.classList.add('cover-flight');
-    copy.setAttribute('aria-hidden','true');
-    Object.assign(copy.style,{top:finish.top+'px',left:finish.left+'px',width:finish.width+'px',height:finish.height+'px',borderRadius:finalRadius});
-    document.body.append(copy);
-    target.style.visibility='hidden';
-    const dx=start.left-finish.left, dy=start.top-finish.top;
-    const animation=copy.animate([
-      {transform:'translate('+dx+'px,'+dy+'px) scale('+start.width/finish.width+','+start.height/finish.height+')',borderRadius:initialRadius},
-      {transform:'none',borderRadius:finalRadius}
-    ],{duration:pixel?180:magazine?225:340,easing:pixel?'steps(6,end)':'cubic-bezier(.2,.76,.19,1)'});
-    function clean(){
-      target.style.visibility='';copy.remove();
-      if(transition?.clone===copy)transition=null;
-    }
-    transition={target,clone:copy,cancel(){animation.cancel();clean()}};
-    animation.onfinish=clean;
-    animation.oncancel=()=>{if(copy.isConnected)clean()};
+  function cancelNavigation() {
+    navigation?.exit?.cancel();
+    navigation=null;
+    for(const animation of reveals)animation.cancel();
+    reveals=[];
   }
-  window.addEventListener('resize',()=>transition?.cancel());
-  window.addEventListener('scroll',()=>{if(transition && Math.abs(transition.target.getBoundingClientRect().top-parseFloat(transition.clone.style.top))>2)transition.cancel()},{passive:true});
+  function move(hash,origin,push=true) {
+    if(push && navigation?.hash===hash)return;
+    cancelNavigation();
+    if(hash===rendered)return;
+
+    const outgoing=byId(destination(rendered));
+    const request={hash,exit:null};
+    navigation=request;
+    const motion=!reducedMotion.matches && typeof outgoing.animate==='function';
+    function commit() {
+      if(navigation!==request)return;
+      positions.set(rendered,{y:window.scrollY,href:origin?.getAttribute('href')});
+      if(push)history.pushState(null,'',hash);
+      route(hash,!push || positions.has(hash));
+      request.exit?.cancel();
+      navigation=null;
+      if(!motion || reducedMotion.matches)return;
+
+      const screen=byId(destination(hash));
+      reveals.push(screen.animate(
+        [{opacity:.68,transform:'translateY(5px)'},{opacity:1,transform:'none'}],
+        {duration:170,easing:'cubic-bezier(.2,.7,.25,1)'}
+      ));
+      const art=screen.querySelector('.detail-hero > .cover, .archive-picks .cover, .story-photo');
+      if(art)reveals.push(art.animate(
+        [{clipPath:'inset(0 1.2% 1.2% 0)'},{clipPath:'inset(0)'}],
+        {duration:210,easing:'cubic-bezier(.2,.7,.25,1)'}
+      ));
+    }
+    if(!motion || !push){commit();return}
+
+    // Keep the current page readable until the next screen can be rendered.
+    request.exit=outgoing.animate([{opacity:1},{opacity:.74}],{duration:75,fill:'forwards'});
+    request.exit.finished.then(commit,()=>{});
+  }
+  reducedMotion.addEventListener('change',()=>{
+    const pending=navigation;
+    cancelNavigation();
+    if(pending)move(pending.hash,null);
+  });
   document.addEventListener('click',event=>{
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
     const a=event.target.closest('a[href^="#"]');
@@ -523,7 +520,10 @@
   }).then(rows=>{
     indexCatalogue(rows);
     for(const control of all('[data-shuffle]'))control.disabled=false;
-    if(isDetail(currentHash()))route(currentHash());
+    if(isDetail(rendered)){
+      route(rendered);
+      byId('detail').querySelector('h1')?.setAttribute('tabindex','-1');
+    }
   }).catch(()=>{
     catalogFailed=true;byId('total').textContent='טעינת הארכיון נכשלה.';
     groups.replaceChildren(link('לארכיון התחנה ב־hearthis.at','https://hearthis.at/bgu-radio/','text-link','up'));
