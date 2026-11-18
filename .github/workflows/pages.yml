@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      - soft-signal
-      - after-hours
-      - pixel-frequency
   workflow_dispatch:
 
 permissions:
@@ -25,42 +22,52 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout all design branches
+      - name: Checkout main (three independent site sources)
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
-      - name: Refresh shared catalogue
+      - name: Refresh canonical station catalogue
         run: |
-          git checkout main
           git pull --ff-only origin main
           python tools/catalog.py
-          git add catalog/library.json
+          git add data/library.json
           if ! git diff --cached --quiet; then
             git config user.name "BGU Radio catalogue"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "Refresh public station catalogue"
             git push origin HEAD:main
           fi
-      - name: Assemble branch previews
+
+      - name: Verify architecture and shared source
+        run: python tools/architecture_checks.py
+
+      - name: Assemble independent previews and preserve legacy links
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p dist
-          cp catalog/library.json dist/library.json
-          mkdir -p dist/main/downloads
+          mkdir -p dist/data dist/main/downloads
+          cp data/*.json dist/data/
+          # The historic /main/ player still expects this compatibility URL.
+          cp data/library.json dist/library.json
           cp -r radio/. dist/main/
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          station = json.loads(Path("data/station.json").read_text(encoding="utf-8"))
+          Path("dist/main/station-info.js").write_text(
+              "window.BGU_CONTENT = " + json.dumps(station, ensure_ascii=False) + ";\\n",
+              encoding="utf-8")
+          PY
           (cd extension && zip -q ../dist/main/downloads/bgu-radio-player.zip *.json *.js *.html *.css)
           for slug in soft-signal after-hours pixel-frequency; do
             mkdir -p "dist/$slug"
-            git archive "origin/$slug" index.html edition.css | tar -x -C "dist/$slug"
-            if [ "$slug" = pixel-frequency ]; then
-              git archive "origin/$slug" art | tar -x -C "dist/$slug"
-            fi
+            cp -r "sites/$slug/." "dist/$slug/"
           done
           touch dist/.nojekyll
 
-      - name: Capture desktop and mobile comparison
+      - name: Cache media in each site and smoke-test navigation
         run: |
           python -m pip install playwright Pillow
           python -m playwright install chromium

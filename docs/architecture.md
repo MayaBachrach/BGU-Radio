@@ -22,3 +22,13 @@
 3. Run targeted architecture/content validation, then smoke-test the three published URL paths, navigation, archive, gallery, artwork and playback state. Continue producing comparison previews.
 
 Existing design branches are historical references and must not be deleted. Existing top-level source files (`content.js`, `station.js`, `index.html`, `radio/`) are legacy sources, not dependencies of the three independent site implementations.
+
+## Post-migration implementation
+
+The `main` branch contains three self-contained implementations in `sites/`. Each entry point loads its own `core.css`, `edition.css`, `fonts/fonts.css`, `app.js`, per-site media map and image assets. Copies of the pre-migration code were made deliberately instead of sharing player, router or animation logic. Distinct visual behavior has not been changed. The local artwork and photos are injected from `data/station.json` into each preview at build time and read from the same file at runtime; the archive and episodes use `data/library.json`. The collector writes only to the canonical `data/library.json`.
+
+The deploy copies `sites/<slug>/` from `main` to the **unchanged** `/<slug>/` public paths; the original design branches remain intact. Content/media collection, comparison images, Chrome extension zip and `/main/` legacy preview remain available. Cached artwork is physically duplicated under each deployed site's own `media/` folder; no site imports another site's assets. `dist/library.json` is a generated compatibility copy only for the old `/main/` preview, not an authoring source.
+
+Validation is `python tools/architecture_checks.py` plus the default two-viewport (desktop/mobile) Playwright integration smoke test in `tools/preview_checks.py`. To run the historical broader responsive suite, set `BGU_FULL_PREVIEW=1`.
+
+**Deferred cleanup (not necessary for these three websites):** historic root-page files `index.html`, `content.js`, `station.js`, `player.js`, and the legacy `radio/` implementation still exist to avoid destructive changes to other experiments. They are not imported by any of the three sites. They can be archived in a separate task, once their consumers are confirmed. No visual redesign was performed.

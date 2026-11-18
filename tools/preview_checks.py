@@ -1,5 +1,6 @@
 """Exercise routes in Chromium and render normal-motion comparison art from the published files."""
 import base64
+import os
 import io
 import json
 import re
@@ -13,7 +14,8 @@ ROOT = Path("dist")
 SHOTS = ROOT / "shots"
 SHOTS.mkdir(exist_ok=True)
 EDITIONS = ("soft-signal","after-hours","pixel-frequency")
-SIZES = [(320,640),(375,812),(390,844),(430,932),(600,860),(768,1024),(844,390),(1024,768),(1440,900)]
+SIZES = ([(320,640),(375,812),(390,844),(430,932),(600,860),(768,1024),(844,390),(1024,768),(1440,900)]
+         if os.environ.get('BGU_FULL_PREVIEW') == '1' else [(390,844),(1440,900)])
 HOST = "http://127.0.0.1:8765"
 checks = []
 

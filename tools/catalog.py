@@ -54,7 +54,7 @@ def collect(channel):
     return rows
 
 channels=['original','hearthis','mix:sbradio101','mix:Boozie_Raviv','https://pinecast.com/feed/made-in-bgu','https://anchor.fm/s/d8da22c/podcast/rss','https://anchor.fm/s/36933808/podcast/rss']
-folder=pathlib.Path('catalog');folder.mkdir(exist_ok=True)
+folder=pathlib.Path('data');folder.mkdir(exist_ok=True)
 existing={}
 target=folder/'library.json'
 if target.exists(): existing={x['source'].rstrip('/'):x for x in json.loads(target.read_text())}
