@@ -21,7 +21,7 @@ header .nav-shell{min-height:92px;border-bottom:1px solid var(--line);gap:20px}
 .signal-mark i{width:3px;height:11px;background:#ffb5d2;border-radius:4px}
 .signal-mark i:nth-child(2){height:21px}.signal-mark i:nth-child(3){height:15px}.signal-mark i:last-child{height:7px}
 header nav{padding:5px;border-radius:100px;background:#eeecf0;gap:2px}
-header nav a{font-size:.9rem;font-weight:650;border-radius:100px;padding-inline:19px;min-height:40px;transition:color .18s}
+header nav a{font-size:.9rem;font-weight:650;border-radius:100px;padding-inline:19px;min-height:40px}
 header nav a[aria-current]{background:var(--ink);color:#fff}
 header nav a:not([aria-current]):hover{background:#dedbe3}
 .compare-link{font-size:.81rem;font-weight:650;color:#514759;gap:8px;transition:color .2s}
@@ -463,4 +463,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   #groups .sleeve:first-child .cover {width:43%}
   #groups .sleeve:first-child strong {font-size:1.35rem}
   #archive .archive-fresh {margin-top:50px}
+}
+
+/* Keep the active tab instantly readable throughout route changes. */
+header nav a[aria-current]{color:#fff}
+@media(max-width:650px){
+  .archive-mast{padding-block:17px 9px}
+  .archive-collage{height:117px;min-height:117px}
+  .archive-float-a{width:115px;left:31%;top:0}
+  .archive-float-b{width:87px;left:6%;top:16%}
+  .archive-float-c{width:87px;left:66%;top:17%}
+  .archive-library-head{margin-top:18px}
+  .archive-library-head>p{display:none}
+  .filters{margin:10px 0 19px}
+  .index-section>.section-heading{margin-bottom:15px}
 }
