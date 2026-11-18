@@ -1,0 +1,3 @@
+let creating;
+async function ensureOffscreen(){if(await chrome.offscreen.hasDocument())return;if(!creating){creating=chrome.offscreen.createDocument({url:"offscreen.html",reasons:["AUDIO_PLAYBACK"],justification:"Play BGU Radio live audio while the toolbar popup is closed."}).finally(()=>{creating=undefined;});}await creating;}
+chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{if(message.target==="offscreen")return; (async()=>{try{await ensureOffscreen();const result=await chrome.runtime.sendMessage({target:"offscreen",action:message.action});sendResponse(result);}catch(error){sendResponse({playing:false,error:"Stream unavailable. Try again."});}})();return true;});
