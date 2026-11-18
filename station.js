@@ -49,7 +49,7 @@ function timestamp(v){if(!v)return 0;if(/^\d+$/.test(v))return Number(v)*(String
 function group(r){if(r.series)return r.series;const cleaned=r.title.replace(/^\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*/,'').replace(/\s*[-|–]?\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*$/,'').replace(/\s+[-–]?\s*(?:בהגשת|hosted by)\s+.+$/i,'').replace(/^['"״]+|['"״]+$/g,'').trim();return cleaned.split(/\s+[|·–—]\s+|\s+[-–]\s+פרק|\s+פרק\s+\d/i)[0].trim()||r.title}
 const archiveSkin={'main':'broadcast','design-campus':'cinema','design-studio':'machine','design-poolsuite':'desktop','design-shuffle':'index'};
 $('archive').dataset.skin=archiveSkin[location.pathname.split('/').filter(Boolean).pop()]||'broadcast';
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='../main/archive.css';document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='../main/archive.css';if(!document.body.dataset.edition)document.head.append(sheet);
 const owners=new Map();
 function indexArt(data){
  for(const r of data){for(const url of [r.artwork,r.show_artwork].filter(Boolean)){const name=group(r);owners.set(url,owners.has(url)&&owners.get(url)!==name?null:name)}}
