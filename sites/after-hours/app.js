@@ -14,7 +14,12 @@
   }
   for (const img of all('img[data-station-photo]')) {
     const item = station.gallery[Number(img.dataset.stationPhoto)];
-    if (item) img.src = assets[item[1]] || item[1];
+    if (!item) continue;
+    const original=item[1];
+    img.addEventListener('error',()=>{
+      if(img.getAttribute('src')!==original) img.src=original;
+    });
+    img.src=assets[original] || original;
   }
   const streamUrl = station.liveStreamUrl;
   const audio = byId('radio-audio');
@@ -149,7 +154,14 @@
       matches.append(create('h3','','פרקים שנמצאו'));
       for (const row of hits.slice(0,pageSize)) matches.append(rowLink(row,'episode-row'));
     }
-    groups.replaceChildren(...filtered.slice(0,pageSize).map(sleeve));
+    groups.replaceChildren(...filtered.slice(0,pageSize).map((program,index)=>{
+      const entry=sleeve(program);
+      const number=create('span','index-number',String(index+1).padStart(2,'0'));
+      number.dir='ltr';
+      number.setAttribute('aria-hidden','true');
+      entry.prepend(number);
+      return entry;
+    }));
     byId('total').textContent=filtered.length+' תוכניות ואוספים';
     byId('empty').hidden=Boolean(filtered.length||hits.length);
     byId('more').hidden=pageSize>=Math.max(filtered.length,hits.length);
@@ -174,7 +186,7 @@
     catalogue.sort((a,b)=>stamp(b.date)-stamp(a.date));
     for(const p of programs.values()){
       p.episodes.sort((a,b)=>stamp(b.date)-stamp(a.date));
-      p.art=(p.series&&recordArt(p.series))||p.rows.map(r=>r.show_artwork).find(u=>validImage(u)&&imageOwners.get(u)===p.name)||p.rows.map(recordArt).find(Boolean);
+      p.art=station.featuredCovers[p.name]||(p.series&&recordArt(p.series))||p.rows.map(r=>r.show_artwork).find(u=>validImage(u)&&imageOwners.get(u)===p.name)||p.rows.map(recordArt).find(Boolean);
     }
     const rank=p=>p.series?0:p.art&&p.episodes.length>1?1:p.art?2:3;
     orderedPrograms=[...programs.values()].sort((a,b)=>rank(a)-rank(b)||b.episodes.length-a.episodes.length||a.name.localeCompare(b.name,'he'));
