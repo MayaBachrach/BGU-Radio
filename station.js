@@ -42,7 +42,7 @@ function picture(step){const pics=BGU_CONTENT.gallery;photo=(photo+step+pics.len
 picture(0);$('prev').onclick=()=>picture(-1);$('next').onclick=()=>picture(1);
 for(const [name] of BGU_CONTENT.supporters){$('credits').append(el('span',name))}
 let rows=[];
-function listen(item){history.replaceState(null,'','#episode/'+encodeURIComponent(item.source)); revealArchive();live.pause();deck.replaceChildren(cover(group(item),artFor(item)),el('h3',item.title));if(item.description)deck.append(el('p',item.description));if(timestamp(item.date))deck.append(el('small',new Date(timestamp(item.date)).toLocaleDateString('he-IL')));const fields=[['הגשה',item.host],['הפקה',item.production],['עריכה',item.editor]].filter(p=>p[1]);if(fields.length)deck.append(el('p',fields.map(p=>p.join(' · ')).join('  /  ')));
+function listen(item){history.replaceState(null,'','#episode/'+encodeURIComponent(item.source)); revealArchive();live.pause();deck.replaceChildren(cover(group(item),artFor(item)),el('h3',item.title));if(item.description)deck.append(el('p',item.description));const back=el('a','לכל פרקי התוכנית ←');back.href='#program/'+encodeURIComponent(group(item));deck.append(back);if(timestamp(item.date))deck.append(el('small',new Date(timestamp(item.date)).toLocaleDateString('he-IL')));const fields=[['הגשה',item.host],['הפקה',item.production],['עריכה',item.editor]].filter(p=>p[1]);if(fields.length)deck.append(el('p',fields.map(p=>p.join(' · ')).join('  /  ')));
 if(item.audio||item.embed){const player=el(item.audio?'audio':'iframe');player.src=item.audio||item.embed;player.title=item.title;player.controls=true;player.allow='autoplay; encrypted-media';deck.append(player);if(item.audio){const status=el('small');status.setAttribute('role','status');deck.append(status);for(const [event,label] of Object.entries({waiting:'טוען שמע…',playing:'בהשמעה',pause:'מושהה',error:'הטעינה נכשלה. אפשר להאזין דרך הקישור למקור.'}))player.addEventListener(event,()=>status.textContent=label);player.play().catch(()=>status.textContent='לחצו להפעלה בנגן')}}
 const a=el('a','האזנה במקור ↗');a.href=item.source;deck.append(a);deck.scrollIntoView({block:'center'})}
 function timestamp(v){if(!v)return 0;if(/^\d+$/.test(v))return Number(v)*(String(v).length<=10?1000:1);return Date.parse(v)||0}
@@ -54,7 +54,7 @@ const owners=new Map();
 function indexArt(data){
  for(const r of data){for(const url of [r.artwork,r.show_artwork].filter(Boolean)){const name=group(r);owners.set(url,owners.has(url)&&owners.get(url)!==name?null:name)}}
 }
-function artFor(row){return [row.artwork,row.show_artwork].find(url=>url&&owners.get(url)===group(row)&&/^https?:/.test(url)&&!/(default.art|default_avatar|placeholder)/i.test(url))}
+function artFor(row){return [row.artwork,row.show_artwork].find(url=>url&&owners.get(url)===group(row)&&/^https?:/.test(url)&&!/(image_user\/|default.art|default_avatar|placeholder)/i.test(url))}
 function cover(title,url){
  const wrap=el('figure');wrap.className='sleeve-art';wrap.setAttribute('aria-hidden','true');
  const palette=[['#ec763d','#302119'],['#254849','#efedc7'],['#dccdb1','#372641'],['#e9b9ba','#501633'],['#b0cce0','#192d48']];
@@ -81,12 +81,13 @@ function recentReleases(data){
  section.append(strip);if(strip.childElementCount)$('groups').before(section)
 }
 let groupLimit=36;
-function render(){const q=$('query').value.trim().toLocaleLowerCase();const groups=new Map();
+function render(){const q=$('query').value.trim().toLocaleLowerCase();const shelf=document.querySelector('.recent');if(shelf)shelf.hidden=Boolean(q||sourceFilter.value);
+const groups=new Map();
 for(const row of rows){if(sourceFilter.value&&row.platform!==sourceFilter.value)continue;if(![row.title,row.series,row.host,row.production,row.editor,row.publisher].join(' ').toLocaleLowerCase().includes(q))continue;const key=group(row);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row)}
 $('groups').replaceChildren();$('total').textContent=groups.size+' תוכניות ואוספים';
 const ordered=[...groups].sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0],'he'));for(const [title,items] of ordered.slice(0,groupLimit)){$('groups').append(programSleeve(title,items))}if(groups.size>groupLimit){const more=el('button','תוכניות נוספות');more.onclick=()=>{groupLimit+=36;render()};$('groups').append(more)}}
 const sourceFilter=el('select');sourceFilter.setAttribute('aria-label','סינון לפי מקור');const allSources=el('option','כל המקורות');allSources.value='';sourceFilter.append(allSources);$('query').after(sourceFilter);sourceFilter.onchange=render;
-fetch('../library.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{for(const source of [...new Set(data.map(r=>r.platform).filter(Boolean))].sort())sourceFilter.append(el('option',source));indexArt(data);rows=data.sort((a,b)=>timestamp(b.date)-timestamp(a.date));recentReleases(rows);render();route()}).catch(()=>{$('total').textContent='טעינת הארכיון נכשלה';const a=el('a','פתיחת ארכיון התחנה');a.href='https://hearthis.at/bgu-radio/';$('groups').append(a)});
+fetch('../library.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{for(const row of data){if(row.platform?.toLowerCase()==='mixcloud')row.platform='Mixcloud'}for(const source of [...new Set(data.map(r=>r.platform).filter(Boolean))].sort())sourceFilter.append(el('option',source));indexArt(data);rows=data.sort((a,b)=>timestamp(b.date)-timestamp(a.date));recentReleases(rows);render();route()}).catch(()=>{$('total').textContent='טעינת הארכיון נכשלה';const a=el('a','פתיחת ארכיון התחנה');a.href='https://hearthis.at/bgu-radio/';$('groups').append(a)});
 $('query').oninput=()=>{groupLimit=36;render()};
 if($('shuffle'))$('shuffle').onclick=()=>{const pool=rows.filter(r=>r.kind!=='series'&&(r.audio||r.embed));if(pool.length){location.hash='archive';route();listen(pool[Math.floor(Math.random()*pool.length)])}};
 function revealArchive(){for(const p of document.querySelectorAll('[data-page]'))p.hidden=p.dataset.page!=='archive'}
