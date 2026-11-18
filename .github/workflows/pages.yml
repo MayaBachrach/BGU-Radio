@@ -1,0 +1,66 @@
+name: Publish design previews
+
+on:
+  push:
+    branches:
+      - main
+      - "design-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout all design branches
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Assemble branch previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          refs="$(git for-each-ref --format='%(refname:short)' refs/remotes/origin/main 'refs/remotes/origin/design-*')"
+          for ref in $refs; do
+            slug="${ref#origin/}"
+            mkdir -p "dist/$slug"
+            git archive "$ref" | tar -x -C "dist/$slug"
+            rm -rf "dist/$slug/.github"
+            mkdir -p "dist/$slug/downloads"
+            (cd "dist/$slug" && zip -q -r downloads/bgu-radio-player.zip extension)
+            rm -rf "dist/$slug/extension" "dist/$slug/README.md"
+          done
+          cat > dist/index.html <<'HTML'
+          <!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BGU Radio — Design Previews</title>
+          <style>body{margin:0;background:#171914;color:#f4f0e7;font:16px Arial,sans-serif;padding:8vw}h1{font-size:clamp(48px,10vw,120px);letter-spacing:-.08em;line-height:.85;margin:0 0 22px}p{color:#b8b9b2}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:38px}a{display:block;background:#d8ff52;color:#171914;text-decoration:none;padding:22px;font-weight:bold}a:hover{background:#f25b35;color:#fff}.small{font:11px monospace;text-transform:uppercase;margin-top:14px}</style>
+          <h1>BGU RADIO<br>DESIGN STUDIES</h1><p>Same station, same content. Different visual directions.</p><div class="grid">
+          HTML
+          for ref in $refs; do
+            slug="${ref#origin/}"
+            printf '<a href="./%s/">%s<div class="small">OPEN PREVIEW ↗</div></a>\n' "$slug" "$slug" >> dist/index.html
+          done
+          printf '</div></html>\n' >> dist/index.html
+          touch dist/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
