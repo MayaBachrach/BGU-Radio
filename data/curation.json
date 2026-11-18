@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "programs": [
+    {
+      "id": "made in bgu תוצרת אב ג",
+      "source": "https://made-in-bgu.pinecast.co/episode/9be9251c/-",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "ספרות זה הקול",
+      "source": "https://podcasters.spotify.com/pod/show/sifrot-bgu/episodes/17---------20-----21-e1fck53",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "sb campus radio",
+      "source": "https://podcasters.spotify.com/pod/show/sb-campus-radio/episodes/Chronicles-of-a-Cosmetics-Alchemist-e2ng724",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "בחברה טובה",
+      "source": "https://open.spotify.com/show/0fL5yqOpSdpeycyu48F5Zx",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "הזקן והיום",
+      "source": "https://open.spotify.com/show/3J6wPbHkRb6QsP3as9jXNq",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "התכנית שלי להפוך לרופא",
+      "source": "https://open.spotify.com/show/4sVDhGjDI8OK5Aq5FCzUT5",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "יוצרים את העתיד نخلق المستقبل",
+      "source": "https://open.spotify.com/show/6Rfu8H4bAb6IYsoNHyRGGJ",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "ליניארית to go",
+      "source": "https://open.spotify.com/show/0Gc2fS7W8eNKuFiJeF0ijy",
+      "artworkField": "show_artwork"
+    },
+    {
+      "id": "שלייקעס",
+      "source": "https://open.spotify.com/show/6W9fB2m8aEYXE6iFvvtNPY",
+      "artworkField": "show_artwork"
+    }
+  ],
+  "episodes": [
+    {
+      "source": "https://made-in-bgu.pinecast.co/episode/9be9251c/-",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/meetingatthelibrary-chapter3/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://podcasters.spotify.com/pod/show/sifrot-bgu/episodes/17---------20-----21-e1fck53",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/mcr-interview/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://podcasters.spotify.com/pod/show/sb-campus-radio/episodes/The-Unanswered-Call-e3mei8t",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/638db3dce2c31/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/ahraon-yadlin-at-the-board-of-govenors-2018/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/alongalili/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/arkademode-mixtape/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/binaandsun/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/diana-up-set-23.5/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/dna-perek-1/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/ee-eeee-eeee-105/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eee-12/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eee-eeeee-44/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeee-eee-eeee-eeee-191222/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeee-eee/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeee-eeeee-26.4/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeee-eeeee-ee-eeeeeeeee-eeee/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeee-eeeee-eeeee-eeeeeee-ee-eeeeee/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeeee-ee-eeee-118/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeeeee-eeee/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeeeee-eeeee-eeee-eeeeee/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeeeeeeee-1210/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eeeeldad/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eli-kesselman-set/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/full-ohm-v2/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/greenegevuliturbine/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/haprlament1/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/j-k-set/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/jumbaratika/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/juvalporat/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/khalid-badu-mixdown-2/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/klepter/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/kolot-meafrica-i-ben-guryon/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/mosheohaonorpeta/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/musickidsjusidman/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/national-post-trauma/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/omri-shower-time-165-mix/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/ran-v-6.6/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/rhcp1/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/scratchim-136/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/warsongs/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/women-be-supa-dupa-flyflanger-dj-flora/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/yuval2/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/alternativa1/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/angel-or-devil/",
+      "artworkField": "artwork"
+    },
+    {
+      "source": "https://hearthis.at/bgu-radio/eplayistwinners/",
+      "artworkField": "artwork"
+    }
+  ],
+  "pinned": {
+    "programs": [],
+    "episodes": []
+  }
+}

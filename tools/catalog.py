@@ -1,6 +1,8 @@
 import json, pathlib, urllib.request, urllib.parse, concurrent.futures, html, re
 import xml.etree.ElementTree as ET
 
+from curate import generate
+
 def read(url):
     request = urllib.request.Request(url, headers={'User-Agent':'BGURadioCatalog/1.0'})
     with urllib.request.urlopen(request, timeout=12) as response:
@@ -57,7 +59,7 @@ channels=['original','hearthis','mix:sbradio101','mix:Boozie_Raviv','https://pin
 folder=pathlib.Path('data');folder.mkdir(exist_ok=True)
 existing={}
 target=folder/'library.json'
-if target.exists(): existing={x['source'].rstrip('/'):x for x in json.loads(target.read_text())}
+if target.exists(): existing={x['source'].rstrip('/'):x for x in json.loads(target.read_text(encoding='utf-8'))}
 with concurrent.futures.ThreadPoolExecutor() as pool:
     jobs={ch:pool.submit(collect,ch) for ch in channels}
     for ch,job in jobs.items():
@@ -76,3 +78,5 @@ for title,id in [["שלייקעס","6W9fB2m8aEYXE6iFvvtNPY"],["יוצרים את
         print('Spotify artwork',title,str(error))
     existing[url]=record(title,url,'Spotify',None,artwork=art,show_artwork=art,kind='series',series=title,embed='https://open.spotify.com/embed/show/'+id)
 target.write_text(json.dumps(list(existing.values()),ensure_ascii=False),encoding='utf-8')
+
+generate(folder)
