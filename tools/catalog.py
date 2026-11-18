@@ -18,6 +18,10 @@ def credits(description):
         if match: result[key] = match[1].strip()
     return result
 
+def feed_art(node):
+    image = node.find('{http://www.itunes.com/dtds/podcast-1.0.dtd}image')
+    return (image.get('href') if image is not None else None) or node.findtext('image/url')
+
 def collect(channel):
     rows = []
     if channel.startswith('mix:'):
@@ -46,7 +50,7 @@ def collect(channel):
             if media is None: continue
             url=media.get('url')
             d=html.unescape(re.sub('<[^>]+>','\n',t.findtext('description','')))
-            rows.append(record(t.findtext('title'),t.findtext('link') or url,'RSS',feed.findtext('{http://www.itunes.com/dtds/podcast-1.0.dtd}author'),series=feed.findtext('title'),date=t.findtext('pubDate'),description=d,audio=url,**credits(d)))
+            rows.append(record(t.findtext('title'),t.findtext('link') or url,'RSS',feed.findtext('{http://www.itunes.com/dtds/podcast-1.0.dtd}author'),artwork=feed_art(t) or feed_art(feed),show_artwork=feed_art(feed),series=feed.findtext('title'),date=t.findtext('pubDate'),description=d,audio=url,**credits(d)))
     return rows
 
 channels=['original','hearthis','mix:sbradio101','mix:Boozie_Raviv','https://pinecast.com/feed/made-in-bgu','https://anchor.fm/s/d8da22c/podcast/rss','https://anchor.fm/s/36933808/podcast/rss']
@@ -64,5 +68,11 @@ with concurrent.futures.ThreadPoolExecutor() as pool:
         except Exception as e: print(ch,str(e))
 for title,id in [["שלייקעס","6W9fB2m8aEYXE6iFvvtNPY"],["יוצרים את העתיד · نخلق المستقبل","6Rfu8H4bAb6IYsoNHyRGGJ"],["ליניארית To go","0Gc2fS7W8eNKuFiJeF0ijy"],["התכנית שלי להפוך לרופא","4sVDhGjDI8OK5Aq5FCzUT5"],["הזקן והיום","3J6wPbHkRb6QsP3as9jXNq"],["בחברה טובה","0fL5yqOpSdpeycyu48F5Zx"]]:
     url='https://open.spotify.com/show/'+id
-    existing[url]=record(title,url,'Spotify',None,kind='series',series=title,embed='https://open.spotify.com/embed/show/'+id)
+    art=existing.get(url,{}).get('artwork')
+    try:
+        info=json.loads(read('https://open.spotify.com/oembed?url='+urllib.parse.quote(url,safe='')))
+        art=info.get('thumbnail_url') or art
+    except (ValueError, OSError) as error:
+        print('Spotify artwork',title,str(error))
+    existing[url]=record(title,url,'Spotify',None,artwork=art,show_artwork=art,kind='series',series=title,embed='https://open.spotify.com/embed/show/'+id)
 target.write_text(json.dumps(list(existing.values()),ensure_ascii=False),encoding='utf-8')
