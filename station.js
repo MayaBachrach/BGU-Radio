@@ -41,7 +41,7 @@ function picture(step){const pics=BGU_CONTENT.gallery;photo=(photo+step+pics.len
 picture(0);$('prev').onclick=()=>picture(-1);$('next').onclick=()=>picture(1);
 for(const [name] of BGU_CONTENT.supporters){$('credits').append(el('span',name))}
 let rows=[];
-function listen(item){live.pause();deck.replaceChildren(el('h3',item.title));const fields=[['הגשה',item.host],['הפקה',item.production],['עריכה',item.editor]].filter(p=>p[1]);if(fields.length)deck.append(el('p',fields.map(p=>p.join(' · ')).join('  /  ')));
+function listen(item){history.replaceState(null,'','#episode/'+encodeURIComponent(item.source)); revealArchive();live.pause();deck.replaceChildren(el('h3',item.title));if(item.description)deck.append(el('p',item.description));if(timestamp(item.date))deck.append(el('small',new Date(timestamp(item.date)).toLocaleDateString('he-IL')));const fields=[['הגשה',item.host],['הפקה',item.production],['עריכה',item.editor]].filter(p=>p[1]);if(fields.length)deck.append(el('p',fields.map(p=>p.join(' · ')).join('  /  ')));
 if(item.audio||item.embed){const player=el(item.audio?'audio':'iframe');player.src=item.audio||item.embed;player.title=item.title;player.controls=true;player.allow='autoplay; encrypted-media';deck.append(player);if(item.audio)player.play().catch(()=>{})}
 const a=el('a','האזנה במקור ↗');a.href=item.source;deck.append(a);deck.scrollIntoView({block:'center'})}
 function timestamp(v){if(!v)return 0;if(/^\d+$/.test(v))return Number(v)*(String(v).length<=10?1000:1);return Date.parse(v)||0}
@@ -49,9 +49,19 @@ function group(r){return r.series||r.title.split(/\s+[|·–—]\s+|\s+[-–]\s+
 function render(){const q=$('query').value.trim().toLocaleLowerCase();const groups=new Map();
 for(const row of rows){if(![row.title,row.series,row.host,row.production,row.editor,row.publisher].join(' ').toLocaleLowerCase().includes(q))continue;const key=group(row);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row)}
 $('groups').replaceChildren();$('total').textContent=groups.size+' תוכניות ואוספים';
-for(const [title,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0],'he'))){const details=el('details'),sum=el('summary',title);const episodes=items.filter(i=>i.kind!=='series');sum.append(el('small',episodes.length?episodes.length+' הקלטות':'פרקי הסדרה ↗'));details.append(sum);details.ontoggle=()=>{if(!details.open||details.children.length>1)return;for(const r of items){const b=el('button',(r.kind==='series'?'כל הפרקים ב־'+r.platform:'▷  '+r.title));b.onclick=()=>listen(r);details.append(b)}};$('groups').append(details)}}
-fetch('../library.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{rows=data.sort((a,b)=>timestamp(b.date)-timestamp(a.date));render()}).catch(()=>{$('total').textContent='טעינת הארכיון נכשלה';const a=el('a','פתיחת ארכיון התחנה');a.href='https://hearthis.at/bgu-radio/';$('groups').append(a)});
+for(const [title,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0],'he'))){const details=el('details'),sum=el('summary',title);const episodes=items.filter(i=>i.kind!=='series');if(location.pathname.includes('/main/')&&items.some(r=>r.artwork)){const cover=el('img');cover.src=items.find(r=>r.artwork).artwork;cover.loading='lazy';cover.alt='';cover.onerror=()=>cover.remove();sum.prepend(cover)}sum.append(el('small',episodes.length?episodes.length+' הקלטות':'פרקי הסדרה ↗'));details.dataset.program=title;details.append(sum);details.ontoggle=()=>{if(!details.open||details.children.length>1)return;const link=el('a','קישור לתוכנית');link.href='#program/'+encodeURIComponent(title);details.append(link);for(const r of items){const b=el('button',(r.kind==='series'?'כל הפרקים ב־'+r.platform:'▷  '+r.title));b.onclick=()=>listen(r);details.append(b)}};$('groups').append(details)}}
+fetch('../library.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{rows=data.sort((a,b)=>timestamp(b.date)-timestamp(a.date));render();route()}).catch(()=>{$('total').textContent='טעינת הארכיון נכשלה';const a=el('a','פתיחת ארכיון התחנה');a.href='https://hearthis.at/bgu-radio/';$('groups').append(a)});
 $('query').oninput=render;
 if($('shuffle'))$('shuffle').onclick=()=>{const pool=rows.filter(r=>r.kind!=='series'&&(r.audio||r.embed));if(pool.length){location.hash='archive';route();listen(pool[Math.floor(Math.random()*pool.length)])}};
-function route(){const key=location.hash.slice(1)||'home';for(const p of document.querySelectorAll('[data-page]'))p.hidden=p.dataset.page!==key;if(document.querySelector('[data-page]'))window.scrollTo(0,0)}
+function revealArchive(){for(const p of document.querySelectorAll('[data-page]'))p.hidden=p.dataset.page!=='archive'}
+function route(){const key=location.hash.slice(1)||'home';
+if(key.startsWith('episode/')){revealArchive();const item=rows.find(r=>encodeURIComponent(r.source)===key.slice(8));if(item&&!deck.childElementCount)listen(item);return}
+if(key.startsWith('program/')){revealArchive();for(const node of $('groups').children){if(encodeURIComponent(node.dataset.program)===key.slice(8)){node.open=true;node.scrollIntoView();break}}return}
+for(const p of document.querySelectorAll('[data-page]'))p.hidden=p.dataset.page!==key;if(document.querySelector('[data-page]'))window.scrollTo(0,0)}
 window.addEventListener('hashchange',route);route();
+
+const archive=$('archive');
+if(!$('shuffle')){const shuffle=el('button','⚄ פרק בהפתעה');shuffle.onclick=()=>{const pool=rows.filter(r=>r.kind!=='series'&&(r.audio||r.embed));if(pool.length)listen(pool[Math.floor(Math.random()*pool.length)])};archive.querySelector('input').after(shuffle)}
+const floating=el('button','■ עצירת השידור');floating.hidden=true;floating.style.cssText='position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:12px;z-index:12;background:#191919;color:white;border:1px solid white;border-radius:30px';document.body.append(floating);floating.onclick=()=>live.pause();
+live.addEventListener('playing',()=>floating.hidden=false);live.addEventListener('pause',()=>floating.hidden=true);
+live.addEventListener('waiting',()=>play.textContent='מתחבר לשידור…');live.addEventListener('error',()=>{play.textContent='ניסיון נוסף';$('song').textContent='החיבור לשידור נכשל'});
