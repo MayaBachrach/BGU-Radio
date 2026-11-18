@@ -485,8 +485,10 @@
     if(typeof document.startViewTransition==='function'){
       const oldCover=matchingCover(origin,from);
       if(oldCover)oldCover.style.viewTransitionName='soft-cover';
-      let nextCover=null;
+      let nextCover=null,cleaned=false;
       const clean=()=>{
+        if(cleaned)return;
+        cleaned=true;
         if(oldCover)oldCover.style.viewTransitionName='';
         if(nextCover)nextCover.style.viewTransitionName='';
       };

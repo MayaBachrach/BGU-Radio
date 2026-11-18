@@ -382,14 +382,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 /* SOFT SIGNAL — coordinated navigation and artwork-first discovery. */
 @supports (view-transition-name:soft-page) {
   #main-content {view-transition-name:soft-page}
-  ::view-transition-old(root),::view-transition-new(root) {animation:none!important}
-  ::view-transition-old(soft-page) {animation:soft-page-out 220ms cubic-bezier(.35,0,.65,1) both}
-  ::view-transition-new(soft-page) {animation:soft-page-in 320ms cubic-bezier(.18,.7,.2,1) both}
-  ::view-transition-old(soft-cover),::view-transition-new(soft-cover) {animation-duration:340ms;animation-timing-function:cubic-bezier(.18,.78,.2,1)}
-  ::view-transition-group(soft-page),::view-transition-group(soft-cover) {animation-duration:340ms}
+  /* The root holds navigation and the persistent player: no double exposure. */
+  ::view-transition-old(root) {animation:none!important;opacity:0!important}
+  ::view-transition-new(root) {animation:none!important}
+  /* Prevent scaling the entire page when incoming/outgoing heights differ. */
+  ::view-transition-group(soft-page) {animation:none!important}
+  ::view-transition-old(soft-page) {animation:soft-page-out 120ms ease-in both}
+  ::view-transition-new(soft-page) {animation:soft-page-in 260ms cubic-bezier(.18,.7,.2,1) both}
+  ::view-transition-old(soft-cover),::view-transition-new(soft-cover) {animation-duration:300ms;animation-timing-function:cubic-bezier(.18,.78,.2,1)}
+  ::view-transition-group(soft-cover) {animation-duration:300ms}
 }
-@keyframes soft-page-out {to {opacity:.18;transform:translateY(-12px) scale(.993)}}
-@keyframes soft-page-in {from {opacity:.22;transform:translateY(15px) scale(.994)}to {opacity:1;transform:none}}
+@keyframes soft-page-out {to {opacity:0;transform:translateY(-8px) scale(.997)}}
+@keyframes soft-page-in {from {opacity:.97;transform:translateY(11px) scale(.997)}to {opacity:1;transform:none}}
 .home-intro {padding-block:20px 18px}
 .intro-heading {margin-top:9px}
 .intro-heading h1 {font-size:clamp(2.5rem,4.2vw,4.45rem)}
