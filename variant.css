@@ -1,0 +1,6 @@
+/* Base design sketch: editorial campus radio */
+.hero{position:relative}
+.listen-card{border:1px solid #171914}
+.photo{border:1px solid #171914}
+.supporters{background:var(--paper)}
+::selection{background:var(--lime);color:var(--ink)}
