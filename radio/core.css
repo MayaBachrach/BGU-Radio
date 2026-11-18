@@ -1,6 +1,5 @@
 * {box-sizing:border-box}
-html {view-transition-name:none}
-::view-transition {pointer-events:none}
+.cover-flight {position:fixed!important;inset:auto;z-index:11;pointer-events:none;transform-origin:0 0;margin:0;contain:paint}
 :root {font:100%/1.5 Rubik,Arial,sans-serif;font-optical-sizing:auto;text-size-adjust:100%}
 body {margin:0;background:var(--bg);color:var(--ink);padding-bottom:max(24px,env(safe-area-inset-bottom))}
 body.has-receiver {padding-bottom:calc(96px + env(safe-area-inset-bottom))}

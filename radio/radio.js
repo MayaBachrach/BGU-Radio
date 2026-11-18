@@ -428,31 +428,53 @@
   function move(hash,origin,push=true) {
     if(hash===rendered)return;
     const from=rendered;
+    const outgoing=origin?.querySelector('[data-art]')||(isDetail(from)?detail.querySelector('.detail-hero>[data-art]'):null);
+    const motionAllowed=!matchMedia('(prefers-reduced-motion: reduce)').matches && typeof document.body.animate==='function';
+    let start=outgoing?.getBoundingClientRect();
+    if(transition){
+      if(transition.target===outgoing) start=transition.clone.getBoundingClientRect();
+      transition.cancel();
+    }
+    const copy=outgoing?.cloneNode(true);
+    const initialRadius=outgoing?getComputedStyle(outgoing).borderRadius:'0px';
     positions.set(from,{y:window.scrollY,href:origin?.getAttribute('href')});
     if(push)history.pushState(null,'',hash);
-    if(transition){transition.skipTransition();transition=null}
-    const oldCover=origin?.querySelector('[data-art]')||(isDetail(from)?detail.querySelector('.detail-hero>[data-art]'):null);
-    const rect=oldCover?.getBoundingClientRect();
-    const animated=rect&&rect.top<innerHeight&&rect.bottom>0&&document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(!animated){route(hash,!push);return}
-    oldCover.style.viewTransitionName='active-cover';
-    let newCover=null;
-    const motion=document.startViewTransition(()=>{
-      oldCover.style.viewTransitionName='';
-      if(currentHash()!==hash)return;
-      route(hash,!push);
-      if(isDetail(hash))newCover=detail.querySelector('.detail-hero>[data-art]');
-      else{
-        const target=[...byId(destination(hash)).querySelectorAll('a[href]')].find(a=>a.getAttribute('href')===from);
-        newCover=target?.querySelector('[data-art]');
-      }
-      if(newCover)newCover.style.viewTransitionName='active-cover';
-    });
-    transition=motion;
-    motion.finished.finally(()=>{
-      if(transition===motion){if(newCover)newCover.style.viewTransitionName='';oldCover.style.viewTransitionName='';transition=null}
-    });
+    route(hash,!push);
+    if(!motionAllowed)return;
+
+    if(magazine && isDetail(hash)){
+      detail.querySelector('.detail-main')?.animate(
+        [{opacity:.45,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],
+        {duration:240,easing:'cubic-bezier(.2,.7,.25,1)'});
+    }
+    if(!copy || !start?.width || start.bottom<0 || start.top>innerHeight)return;
+    const target=isDetail(hash)?detail.querySelector('.detail-hero>[data-art]'):
+      [...byId(destination(hash)).querySelectorAll('a[href]')].find(a=>a.getAttribute('href')===from)?.querySelector('[data-art]');
+    if(!target)return;
+    const finish=target.getBoundingClientRect();
+    if(!finish.width||finish.bottom<0||finish.top>innerHeight)return;
+    // Paint one cover between the two measured slots. Routing and transport stay interactive.
+    const finalRadius=getComputedStyle(target).borderRadius;
+    copy.classList.add('cover-flight');
+    copy.setAttribute('aria-hidden','true');
+    Object.assign(copy.style,{top:finish.top+'px',left:finish.left+'px',width:finish.width+'px',height:finish.height+'px',borderRadius:finalRadius});
+    document.body.append(copy);
+    target.style.visibility='hidden';
+    const dx=start.left-finish.left, dy=start.top-finish.top;
+    const animation=copy.animate([
+      {transform:'translate('+dx+'px,'+dy+'px) scale('+start.width/finish.width+','+start.height/finish.height+')',borderRadius:initialRadius},
+      {transform:'none',borderRadius:finalRadius}
+    ],{duration:pixel?180:magazine?225:340,easing:pixel?'steps(6,end)':'cubic-bezier(.2,.76,.19,1)'});
+    function clean(){
+      target.style.visibility='';copy.remove();
+      if(transition?.clone===copy)transition=null;
+    }
+    transition={target,clone:copy,cancel(){animation.cancel();clean()}};
+    animation.onfinish=clean;
+    animation.oncancel=()=>{if(copy.isConnected)clean()};
   }
+  window.addEventListener('resize',()=>transition?.cancel());
+  window.addEventListener('scroll',()=>{if(transition && Math.abs(transition.target.getBoundingClientRect().top-parseFloat(transition.clone.style.top))>2)transition.cancel()},{passive:true});
   document.addEventListener('click',event=>{
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
     const a=event.target.closest('a[href^="#"]');
