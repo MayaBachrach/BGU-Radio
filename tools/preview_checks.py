@@ -1,102 +1,146 @@
-"""Capture the comparison images and exercise the assembled Pages site."""
+"""Exercise routes in Chromium and render normal-motion comparison art from the published files."""
 import base64
-import json
-import hashlib
 import io
+import json
 import re
-import urllib.request
-from PIL import Image, ImageOps
 from pathlib import Path
-from playwright.sync_api import sync_playwright
+from urllib.parse import quote
 
-output = Path("dist/shots")
-output.mkdir(exist_ok=True)
-# Keep the first screen independent of third-party image server latency.
-media = Path("dist/media")
-media.mkdir(exist_ok=True)
-for branch in ("soft-signal","after-hours","pixel-frequency"):
-    index = Path("dist") / branch / "index.html"
-    document = index.read_text()
-    for url in set(re.findall(r'<img[^>]*?src="(https://[^"]+)"', document)):
-        name = hashlib.sha256(url.encode()).hexdigest()[:18] + ".webp"
-        asset = media / name
-        if not asset.exists():
-            try:
-                with urllib.request.urlopen(url,timeout=16) as response:
-                    with Image.open(io.BytesIO(response.read())) as source:
-                        image = ImageOps.exif_transpose(source).convert("RGB")
-                        image.thumbnail((1400,1400))
-                        image.save(asset,quality=85)
-            except (OSError,ValueError) as error:
-                print("Original image retained",url,error)
-                continue
-        document = document.replace(url,"../media/"+name)
-    index.write_text(document)
-results = []
-with sync_playwright() as studio:
-    browser = studio.chromium.launch()
-    for branch in ["soft-signal","after-hours","pixel-frequency"]:
-        page = browser.new_page(reduced_motion="no-preference")
-        for width, height in [(320,640),(375,812),(390,844),(430,932),(600,860),(768,1024),(844,390),(1024,768),(1440,900)]:
-            print(branch, width, flush=True)
-            page.set_viewport_size({"width":width,"height":height})
-            if width == 320:
-                page.goto("http://localhost:8765/"+branch+"/",wait_until="domcontentloaded")
-            else:
-                page.locator('header nav a[href="#home"]').click()
-            page.locator("#onair").wait_for()
-            if width in [390,1440]:
-                page.locator("[data-page=home] img").evaluate_all("images => Promise.all(images.map(i => i.decode()))")
-                page.screenshot(path=str(output/f"{branch}-{width}.png"),timeout=45000)
-            if width in [390,1440]:
-                tile=page.locator("[data-page=home] .tile").last
-                tile.hover()
-                tile.click()
-                page.locator("details[open] .episode-line").first.wait_for()
-                page.locator('header nav a[href="#home"]').click()
-                if branch=="pixel-frequency":
-                    page.locator(".shelves").click()
-                    page.locator("#query").wait_for()
-                    page.locator('header nav a[href="#home"]').click()
-            overflow = page.evaluate("document.documentElement.scrollWidth > innerWidth")
-            assert not overflow, (branch,width)
-            page.locator('header nav a[href="#archive"]').click()
-            page.locator("#groups details summary").first.wait_for()
-            if width in [390, 1440]:
-                archive = page.locator("#archive")
-                archive.locator(".recent").scroll_into_view_if_needed()
-                cover = archive.locator(".sleeve-art img").first
-                cover.scroll_into_view_if_needed()
-                cover.evaluate("(img) => img.decode()", timeout=20000)
-                assert cover.evaluate("img => img.naturalWidth > 0")
-                page.screenshot(path=str(output/f"archive-{branch}-{width}.png"))
-                program = archive.locator("#groups details").first
-                if program.get_attribute("open") is None:
-                    program.locator("summary").click()
-                program.locator(".episode-line").first.wait_for()
-                program.locator("summary").click()
-                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
-            page.locator("#query").fill("רדיו")
-            page.locator("#query").fill("")
-            page.locator('header nav a[href="#gallery"]').click()
-            count = page.locator("#count").inner_text()
+from PIL import Image
+from playwright.sync_api import expect, sync_playwright
+
+ROOT = Path("dist")
+SHOTS = ROOT / "shots"
+SHOTS.mkdir(exist_ok=True)
+EDITIONS = ("soft-signal","after-hours","pixel-frequency")
+SIZES = [(320,640),(375,812),(390,844),(430,932),(600,860),(768,1024),(844,390),(1024,768),(1440,900)]
+HOST = "http://127.0.0.1:8765"
+checks = []
+
+
+def no_overflow(page, edition, width, route):
+    excess = page.evaluate("document.documentElement.scrollWidth - innerWidth")
+    assert excess <= 1, (edition,width,route,excess)
+
+
+def screenshot(page, name):
+    page.evaluate("document.fonts.ready")
+    page.screenshot(path=str(SHOTS / (name+".png")), animations="allow", timeout=25000)
+
+
+def home_images(page):
+    # The featured stills are pre-optimized by prepare_media, and have intrinsic dimensions.
+    images = page.locator('#home img:not([loading="lazy"])')
+    images.evaluate_all("imgs => Promise.all(imgs.filter(i=>i.getClientRects().length).map(i=>i.decode()))")
+    assert images.count() > 0
+
+
+with sync_playwright() as api:
+    browser = api.chromium.launch()
+    for edition in EDITIONS:
+        for width,height in SIZES:
+            page = browser.new_page(viewport={"width":width,"height":height},has_touch=width<=600,reduced_motion="no-preference")
+            errors = []
+            page.on("pageerror",lambda error: errors.append(str(error)))
+            page.goto(f"{HOST}/{edition}/",wait_until="domcontentloaded")
+            print(edition,width,flush=True)
+            expect(page.locator("#home h1")).to_be_visible()
+            no_overflow(page,edition,width,"home")
+            capture = width in (390,1440)
+            if capture:
+                home_images(page)
+                screenshot(page,f"{edition}-{width}")
+                if edition=="pixel-frequency":
+                    expect(page.locator(".room-art")).to_be_visible()
+                    assert page.locator(".room-art").evaluate("i=>i.naturalWidth>150")
+                    page.locator(".hot-crate").click()
+                else:
+                    lead=page.locator(".pick-feature" if edition=="soft-signal" else ".press-image")
+                    lead.hover()
+                    lead.click()
+                    expect(page.locator("#detail h1")).to_be_visible()
+                    page.go_back()
+                    expect(page.locator("#home h1")).to_be_visible()
+            page.locator('[data-nav="archive"]').click()
+            expect(page.locator("#groups .sleeve").first).to_be_visible()
+            no_overflow(page,edition,width,"archive")
+            if capture:
+                page.locator("#groups .sleeve img").first.evaluate("i=>i.decode()")
+                screenshot(page,f"archive-{edition}-{width}")
+            page.locator("#query").fill("ספרות זה הקול")
+            href="#program/"+quote("ספרות זה הקול",safe="")
+            program=page.locator('#groups a[href="'+href+'"]')
+            expect(program).to_be_visible()
+            program.click()
+            expect(page.locator("#detail h1")).to_have_text("ספרות זה הקול")
+            no_overflow(page,edition,width,"program")
+            if capture:
+                screenshot(page,f"program-{edition}-{width}")
+            page.locator("#detail .episode-row").first.click()
+            expect(page.locator("#detail [data-listen]")).to_be_visible()
+            no_overflow(page,edition,width,"episode")
+            if capture:
+                page.locator("#detail [data-listen]").click()
+                assert page.locator("#radio-audio").evaluate("a=>a.src.startsWith('https://')")
+                player_src=page.locator("#radio-audio").get_attribute("src")
+                expect(page.locator("#receiver")).to_be_visible()
+            page.locator('[data-nav="gallery"]').click()
+            if capture:
+                assert page.locator("#radio-audio").get_attribute("src")==player_src
+            first=page.locator("#photo").get_attribute("src")
             page.locator("#next").click()
-            gallery_changed = count != page.locator("#count").inner_text()
-            page.locator('header nav a[href="#contact"]').click()
-            results.append(dict(branch=branch,width=width,height=height,overflow=overflow,gallery=gallery_changed,contact=page.locator("#contact").is_visible()))
-        page.close()
+            assert first!=page.locator("#photo").get_attribute("src")
+            no_overflow(page,edition,width,"gallery")
+            page.locator('[data-nav="contact"]').click()
+            expect(page.locator('a[href^="mailto:"]')).to_be_visible()
+            no_overflow(page,edition,width,"contact")
+            if capture:
+                page.locator('[data-nav="archive"]').click()
+                page.locator("#query").fill("")
+                page.locator("#source").select_option(label="Spotify")
+                expect(page.locator("#fresh")).to_be_hidden()
+                page.locator("#groups .sleeve").first.click()
+                page.locator("#detail [data-listen]").click()
+                expect(page.locator("#external-player iframe")).to_be_attached()
+                page.locator("#collapse").click()
+                page.locator('[data-nav="contact"]').click()
+                expect(page.locator("#external-player iframe")).to_be_attached()
+                page.locator("#dock-play").click()
+                expect(page.locator("#external-player iframe")).to_have_count(0)
+                if edition=="pixel-frequency":
+                    page.locator('[data-nav="home"]').click()
+                    page.locator(".hot-mix").click()
+                    expect(page.locator("#detail h1")).to_be_visible()
+            assert not errors, (edition,width,errors)
+            checks.append(dict(edition=edition,width=width,height=height,touch=width<=600,result="pass"))
+            page.close()
+        reduced=browser.new_page(reduced_motion="reduce")
+        reduced.goto(f"{HOST}/{edition}/#archive",wait_until="domcontentloaded")
+        reduced.locator("#groups .sleeve").first.press("Enter")
+        expect(reduced.locator("#detail h1")).to_be_visible()
+        reduced.close()
     browser.close()
-(output/"checks.json").write_text(json.dumps(results,indent=2))
 
-# Inline lightweight comparison artwork so all six previews arrive with the page.
-def preview_source(match):
-    filename = match.group(1)
-    with Image.open(output / filename) as shot:
-        shot.thumbnail((720, 560))
-        buffer = io.BytesIO()
-        shot.convert("RGB").save(buffer, format="WEBP", quality=78)
-    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
-    return f'src="data:image/webp;base64,{encoded}"'
+(SHOTS/"checks.json").write_text(json.dumps(checks,indent=2),encoding="utf-8")
 
-template = Path("compare.html")
-template.write_text(re.sub(r'src="\.\./shots/([^"]+)"', preview_source, template.read_text()))
+
+def inline_preview(match):
+    with Image.open(SHOTS/match.group(1)) as shot:
+        shot.thumbnail((720,620))
+        buffer=io.BytesIO()
+        shot.convert("RGB").save(buffer,format="WEBP",quality=83)
+    return 'src="data:image/webp;base64,'+base64.b64encode(buffer.getvalue()).decode("ascii")+'"'
+
+
+template=Path("compare.html").read_text(encoding="utf-8")
+(ROOT/"index.html").write_text(re.sub(r'src="\./shots/([^"]+)"',inline_preview,template),encoding="utf-8")
+# A downloadable high-resolution board for the design presentation.
+board=Image.new("RGB",(1500,350),"#f4f1e9")
+for col,edition in enumerate(EDITIONS):
+    desktop=Image.open(SHOTS/f"{edition}-1440.png").convert("RGB")
+    mobile=Image.open(SHOTS/f"{edition}-390.png").convert("RGB")
+    desktop.thumbnail((365,320));mobile.thumbnail((110,310))
+    x=1000-col*500
+    board.paste(desktop,(x+5,(350-desktop.height)//2))
+    board.paste(mobile,(x+380,(350-mobile.height)//2))
+board.save(SHOTS/"three-editions.webp",quality=88)
