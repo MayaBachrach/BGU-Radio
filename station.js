@@ -98,7 +98,17 @@ for(const p of document.querySelectorAll('[data-page]'))p.hidden=p.dataset.page!
 window.addEventListener('hashchange',route);route();
 
 const archive=$('archive');
+if(document.body.dataset.edition){
+ const bar=el('div');bar.className='mini-receiver';
+ const control=el('button','▶ שידור חי');control.onclick=()=>play.click();
+ const current=el('span','רדיו בן־גוריון');bar.append(control,current);document.body.append(bar);
+ const style=el('style');style.textContent='.mini-receiver{position:fixed;z-index:9;inset:auto 0 0;background:var(--ink);color:var(--bg);display:flex;align-items:center;gap:12px;padding:6px max(16px,4vw) max(6px,env(safe-area-inset-bottom))}.mini-receiver button{background:var(--accent);color:var(--btn);border:0;padding:8px 15px}.mini-receiver span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.mini-receiver[hidden]{display:none}.episode-line{cursor:pointer}#deck:has(audio),#deck:has(iframe){scroll-margin-top:12px}';document.head.append(style);
+ function syncReceiver(){bar.hidden=!document.querySelector('[data-page=home]').hidden;control.textContent=live.paused?'▶ שידור חי':'■ עצירת השידור';current.textContent=$('song').textContent}
+ for(const event of ['playing','pause','error'])live.addEventListener(event,syncReceiver);
+ window.addEventListener('hashchange',syncReceiver);new MutationObserver(syncReceiver).observe(document.querySelector('[data-page=home]'),{attributes:true,attributeFilter:['hidden']});new MutationObserver(syncReceiver).observe($('song'),{childList:true,characterData:true,subtree:true});syncReceiver()
+}
+
 if(!$('shuffle')){const shuffle=el('button','⚄ פרק בהפתעה');shuffle.onclick=()=>{const pool=rows.filter(r=>r.kind!=='series'&&(r.audio||r.embed));if(pool.length)listen(pool[Math.floor(Math.random()*pool.length)])};archive.querySelector('input').after(shuffle)}
 const floating=el('button','■ עצירת השידור');floating.hidden=true;floating.style.cssText='position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:12px;z-index:12;background:#191919;color:white;border:1px solid white;border-radius:30px';document.body.append(floating);floating.onclick=()=>live.pause();
-live.addEventListener('playing',()=>floating.hidden=false);live.addEventListener('pause',()=>floating.hidden=true);
+live.addEventListener('playing',()=>floating.hidden=Boolean(document.body.dataset.edition));live.addEventListener('pause',()=>floating.hidden=true);
 live.addEventListener('waiting',()=>play.textContent='מתחבר לשידור…');live.addEventListener('error',()=>{play.textContent='ניסיון נוסף';$('song').textContent='החיבור לשידור נכשל'});
