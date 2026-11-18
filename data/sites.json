@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "sites": [
+    {
+      "id": "soft-signal",
+      "name": "Soft Signal",
+      "url": "https://mayabachrach.github.io/BGU-Radio/soft-signal/",
+      "previewImages": {
+        "desktop": "https://mayabachrach.github.io/BGU-Radio/shots/soft-signal-1440.png",
+        "mobile": "https://mayabachrach.github.io/BGU-Radio/shots/soft-signal-390.png"
+      }
+    },
+    {
+      "id": "after-hours",
+      "name": "After Hours",
+      "url": "https://mayabachrach.github.io/BGU-Radio/after-hours/",
+      "previewImages": {
+        "desktop": "https://mayabachrach.github.io/BGU-Radio/shots/after-hours-1440.png",
+        "mobile": "https://mayabachrach.github.io/BGU-Radio/shots/after-hours-390.png"
+      }
+    },
+    {
+      "id": "pixel-frequency",
+      "name": "Pixel Frequency",
+      "url": "https://mayabachrach.github.io/BGU-Radio/pixel-frequency/",
+      "previewImages": {
+        "desktop": "https://mayabachrach.github.io/BGU-Radio/shots/pixel-frequency-1440.png",
+        "mobile": "https://mayabachrach.github.io/BGU-Radio/shots/pixel-frequency-390.png"
+      }
+    }
+  ]
+}
