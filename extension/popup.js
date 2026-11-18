@@ -1,0 +1,4 @@
+const button=document.getElementById("toggle"),icon=document.getElementById("icon"),label=document.getElementById("label"),status=document.getElementById("status");
+function paint(playing){icon.textContent=playing?"Ⅱ":"▶";label.textContent=playing?"PAUSE RADIO":"PLAY LIVE";status.textContent=playing?"You're listening to BGU Radio":"Ready to start streaming";}
+async function send(action){button.disabled=true;try{const result=await chrome.runtime.sendMessage({action});paint(Boolean(result?.playing));if(result?.error)status.textContent=result.error;}catch{status.textContent="Could not connect. Try again."; }finally{button.disabled=false;}}
+button.addEventListener("click",()=>send("toggle"));send("state");
